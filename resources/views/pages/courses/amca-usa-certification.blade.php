@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="../images/gocare-institute-logo.png">
+  <link rel="apple-touch-icon" href="../images/gocare-institute-logo.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AMCA (USA) Certification &ndash; GoCare Training Institute</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../style.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  @include('components.seo')
+</head>
+
+<body>
+
+    <!-- COOKIE CONSENT -->
+  <div id="cookie-banner" role="dialog" aria-label="Cookie consent" aria-live="polite">
+    <div class="ck-inner">
+      <div class="ck-left">
+        <div class="ck-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/>
+            <path d="M8.5 8.5v.01"/><path d="M16 15.5v.01"/><path d="M12 12v.01"/>
+          </svg>
+        </div>
+        <div class="ck-copy">
+          <strong>We use cookies</strong>
+          <p>We use cookies to improve your experience, analyse site traffic, and personalise content. By continuing, you agree to our <a href="#">Privacy Policy</a>.</p>
+        </div>
+      </div>
+      <div class="ck-actions">
+        <button class="ck-btn-decline" id="ckDecline">Decline</button>
+        <button class="ck-btn-accept" id="ckAccept">Accept All</button>
+        <button class="ck-close" id="ckClose" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- -- NAVBAR ---------------------------------------- -->
+<nav class="nav" id="mainNav">
+    <div class="nav-inner">
+      <a href="../" class="logo">
+        <img loading="eager" decoding="async" src="../images/gocare-institute-logo.png" width="100" />
+      </a>
+      <div class="nav-links">
+        <div class="nav-item"><a href="../">Home</a></div>
+        <div class="nav-item">
+          <a href="../about">About GoCare <i data-lucide="chevron-down"></i></a>
+          <div class="dropdown about-mega">
+            <div class="res-header">
+              <span class="res-hd-icon"><i data-lucide="info"></i></span>
+              <div class="res-hd-text"><strong>About GoCare</strong><small>Our story, values &amp; recognition</small></div>
+            </div>
+            <div class="res-body">
+              <a href="../about"><span class="rm-ico rm-ico--indigo"><i data-lucide="home"></i></span><span class="rm-text"><strong>About GoCare Institute</strong><small>Our history &amp; leadership</small></span></a>
+              <a href="../about#vision"><span class="rm-ico rm-ico--teal"><i data-lucide="flag"></i></span><span class="rm-text"><strong>Mission &amp; Vision</strong><small>What drives us forward</small></span></a>
+              <a href="../about#core-values"><span class="rm-ico rm-ico--rose"><i data-lucide="heart"></i></span><span class="rm-text"><strong>Core Values</strong><small>Principles we live by</small></span></a>
+              <a href="../about/accreditation"><span class="rm-ico rm-ico--purple"><i data-lucide="globe"></i></span><span class="rm-text"><strong>Accreditation &amp; Recognition</strong><small>Nationally &amp; internationally recognised</small></span></a>
+              <a href="../about/why-choose-us"><span class="rm-ico rm-ico--amber"><i data-lucide="check-circle"></i></span><span class="rm-text"><strong>Why Choose GoCare</strong><small>Stand-out reasons to join us</small></span></a>
+            </div>
+          </div>
+        </div>
+        <div class="nav-item">
+          <a href="../courses">Schools &amp; Programs <i data-lucide="chevron-down"></i></a>
+          <div class="dropdown schools-mega">
+            <div class="res-header">
+              <span class="res-hd-icon"><i data-lucide="graduation-cap"></i></span>
+              <div class="res-hd-text"><strong>Schools &amp; Programs</strong><small>Explore our diverse range of courses</small></div>
+            </div>
+            <div class="res-body">
+              <a href="../schools/medical-health-sciences"><span class="rm-ico rm-ico--rose"><i data-lucide="stethoscope"></i></span><span class="rm-text"><strong>School of Medical &amp; Health Sciences</strong><small>Healthcare &amp; clinical programs</small></span></a>
+              <a href="../schools/hospitality-management"><span class="rm-ico rm-ico--amber"><i data-lucide="utensils"></i></span><span class="rm-text"><strong>School of Hospitality Management</strong><small>Tourism, food &amp; front office</small></span></a>
+              <a href="../schools/social-sciences-business"><span class="rm-ico rm-ico--indigo"><i data-lucide="users"></i></span><span class="rm-text"><strong>School of Social Sciences &amp; Business</strong><small>Community &amp; business programs</small></span></a>
+              <a href="../schools/international-certifications"><span class="rm-ico rm-ico--teal"><i data-lucide="globe"></i></span><span class="rm-text"><strong>International Certifications</strong><small>Globally recognised qualifications</small></span></a>
+              <a href="../courses"><span class="rm-ico rm-ico--purple"><i data-lucide="search"></i></span><span class="rm-text"><strong>View All Courses</strong><small>Browse the full programme list</small></span></a>
+            </div>
+          </div>
+        </div>
+        <div class="nav-item">
+          <a href="../admissions#overview">Admissions <i data-lucide="chevron-down"></i></a>
+          <div class="dropdown admissions-mega">
+            <div class="res-header">
+              <span class="res-hd-icon"><i data-lucide="clipboard-list"></i></span>
+              <div class="res-hd-text"><strong>Admissions</strong><small>Your journey to GoCare starts here</small></div>
+            </div>
+            <div class="res-body">
+              <a href="../admissions#overview"><span class="rm-ico rm-ico--indigo"><i data-lucide="info"></i></span><span class="rm-text"><strong>Admissions Overview</strong><small>Everything you need to know</small></span></a>
+              <a href="../admissions#how-to-apply"><span class="rm-ico rm-ico--teal"><i data-lucide="file-edit"></i></span><span class="rm-text"><strong>How to Apply</strong><small>Step-by-step application guide</small></span></a>
+              <a href="../admissions#intakes"><span class="rm-ico rm-ico--amber"><i data-lucide="calendar"></i></span><span class="rm-text"><strong>Intakes &amp; Deadlines</strong><small>Upcoming intake dates</small></span></a>
+              <a href="../admissions#requirements"><span class="rm-ico rm-ico--orange"><i data-lucide="clipboard-list"></i></span><span class="rm-text"><strong>Entry Requirements</strong><small>Academic &amp; age criteria</small></span></a>
+              <a href="../admissions#fees"><span class="rm-ico rm-ico--purple"><i data-lucide="wallet"></i></span><span class="rm-text"><strong>Fees &amp; Payment Options</strong><small>Tuition, HELB &amp; bursaries</small></span></a>
+              <a href="../admissions#support"><span class="rm-ico rm-ico--rose"><i data-lucide="headphones"></i></span><span class="rm-text"><strong>Admissions Support</strong><small>Get help from our team</small></span></a>
+              <a href="../modes-of-study"><span class="rm-ico rm-ico--teal"><i data-lucide="book-open"></i></span><span class="rm-text"><strong>Modes of Study</strong><small>Full-time, part-time &amp; online</small></span></a>
+              <a href="../hostels-and-accommodation"><span class="rm-ico rm-ico--amber"><i data-lucide="bed"></i></span><span class="rm-text"><strong>Hostels &amp; Accommodation</strong><small>Comfortable student housing</small></span></a>
+            </div>
+          </div>
+        </div>
+        <div class="nav-item">
+          <a href="../industry-liaison">Industry Liaison <i data-lucide="chevron-down"></i></a>
+          <div class="dropdown industry-mega">
+            <div class="res-header">
+              <span class="res-hd-icon"><i data-lucide="briefcase"></i></span>
+              <div class="res-hd-text"><strong>Industry Liaison</strong><small>Partnerships, internships &amp; career services</small></div>
+            </div>
+            <div class="res-body">
+              <a href="../industry-liaison#our-role"><span class="rm-ico rm-ico--indigo"><i data-lucide="globe"></i></span><span class="rm-text"><strong>Our Role</strong><small>Bridging education &amp; industry</small></span></a>
+              <a href="../industrial-attachment"><span class="rm-ico rm-ico--orange"><i data-lucide="clipboard-list"></i></span><span class="rm-text"><strong>Internship &amp; Attachment</strong><small>Hands-on industry placements</small></span></a>
+              <a href="../institutional-partnerships"><span class="rm-ico rm-ico--teal"><i data-lucide="handshake"></i></span><span class="rm-text"><strong>Institutional Partnerships</strong><small>Our network of employers</small></span></a>
+              <a href="../careers"><span class="rm-ico rm-ico--amber"><i data-lucide="briefcase"></i></span><span class="rm-text"><strong>Career Services</strong><small>Jobs, placements &amp; guidance</small></span></a>
+              <a href="../courses/amca-usa-certification"><span class="rm-ico rm-ico--purple"><i data-lucide="globe-2"></i></span><span class="rm-text"><strong>International Certification</strong><small>USA &amp; global qualifications</small></span></a>
+              <a href="../alumni-network"><span class="rm-ico rm-ico--rose"><i data-lucide="users"></i></span><span class="rm-text"><strong>Alumni Network</strong><small>Stay connected after graduation</small></span></a>
+              <a href="../home-based-care"><span class="rm-ico rm-ico--teal"><i data-lucide="heart-pulse"></i></span><span class="rm-text"><strong>GoCare Health Solutions</strong><small>Professional healthcare services</small></span></a>
+            </div>
+          </div>
+        </div>
+        <div class="nav-item">
+          <a href="#">Resources <i data-lucide="chevron-down"></i></a>
+          <div class="dropdown resources-mega">
+            <div class="res-header">
+              <span class="res-hd-icon"><i data-lucide="layers"></i></span>
+              <div class="res-hd-text"><strong>Resources &amp; Tools</strong><small>Everything you need to succeed at GoCare</small></div>
+            </div>
+            <div class="res-body">
+              <a href="../student-resources"><span class="rm-ico rm-ico--purple"><i data-lucide="book-open"></i></span><span class="rm-text"><strong>Student Resources</strong><small>Study materials &amp; guides</small></span></a>
+              <a href="../downloads"><span class="rm-ico rm-ico--orange"><i data-lucide="download"></i></span><span class="rm-text"><strong>Downloads</strong><small>Forms, brochures &amp; prospectus</small></span></a>
+              <a href="../blog"><span class="rm-ico rm-ico--amber"><i data-lucide="edit-3"></i></span><span class="rm-text"><strong>Blogs &amp; Articles</strong><small>Insights, tips &amp; news</small></span></a>
+              <a href="#"><span class="rm-ico rm-ico--indigo"><i data-lucide="graduation-cap"></i></span><span class="rm-text"><strong>Student Portal</strong><small>Access your student account</small></span></a>
+              <a href="../student-testimonials-success-stories"><span class="rm-ico rm-ico--teal"><i data-lucide="message-circle"></i></span><span class="rm-text"><strong>Success Stories</strong><small>Graduate testimonials</small></span></a>
+              <a href="../gallery"><span class="rm-ico rm-ico--rose"><i data-lucide="images"></i></span><span class="rm-text"><strong>Photo Gallery</strong><small>Life &amp; moments at GoCare</small></span></a>
+            </div>
+          </div>
+        </div>
+        <div class="nav-item"><a href="../contact">Contact Us</a></div>
+      </div>
+      <div class="nav-right">
+        <a href="../apply" class="nav-apply-btn">Start Your Journey <i data-lucide="arrow-right"></i></a>
+        <div class="ham" id="hamBtn"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+    <div class="mob-menu" id="mobMenu">
+      <a href="../">Home</a>
+      <a href="../about">About</a>
+      <a href="../courses">Schools &amp; Programs</a>
+      <a href="../admissions#overview">Admissions</a>
+      <a href="../industry-liaison">Industry Liaison</a>
+      <a href="../faqs">FAQs</a>
+      <a href="../downloads">Downloads</a>
+      <a href="../home-based-care">Home Based Care</a>
+      <a href="../gallery">Gallery</a>
+      <a href="../events">Events &amp; Open Days</a>
+      <a href="../blog">Blog &amp; Articles</a>
+      <a href="../contact">Contact Us</a>
+      <a href="../apply" class="btn btn-primary mob-cta">Start Your Journey <i data-lucide="arrow-right"></i></a>
+    </div>
+  </nav>
+
+  <!-- -- SUB BAR --------------------------------------- -->
+  <div class="subbar">
+    <div class="wrap subbar-inner">
+      <span class="subbar-tagline">Train With The Experts... Become an Expert!</span>
+      <div class="subbar-portals">
+        <a href="#" class="subbar-btn subbar-btn--student">Student Portal</a>
+        <a href="#" class="subbar-btn subbar-btn--staff">Staff Portal</a>
+      </div>
+    </div>
+  </div>
+
+
+  
+
+  
+
+<style>
+  :root { --o: #ec7424; --p: #642a7e; --dark: #4a1a6d; }
+
+  /* -- HERO -- */
+  .icp-hero {
+    position: relative;
+    min-height: 52vh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    color: #fff;
+    background: linear-gradient(135deg, #2d0d4e 0%, #5a1a7a 40%, #7c3a00 80%, #3d0d00 100%);
+  }
+  .icp-hero-img {
+    position: absolute;
+    inset: 0; width: 100%; height: 100%;
+    object-fit: cover; object-position: right center;
+    z-index: 0; opacity: 0.35;
+  }
+  .icp-hero-overlay {
+    position: absolute; inset: 0; z-index: 1;
+    background: linear-gradient(to right, rgba(10,10,10,0.88) 0%, rgba(10,10,10,0.55) 50%, transparent 80%);
+  }
+  .icp-hero-inner {
+    position: relative; z-index: 2;
+    max-width: 1200px; margin: 0 auto;
+    padding: 120px 40px 60px; width: 100%;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;
+  }
+  .icp-hero-left h1 {
+    font-family: 'Outfit', 'Inter', sans-serif;
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    font-weight: 900; line-height: 1.05; margin: 0 0 16px; letter-spacing: -1px;
+    color: #fff;
+  }
+  .icp-hero-left h1 em { font-style: italic; color: #fff; }
+  .icp-hero-left h1 span { color: var(--o);}
+  .icp-hero-left p {
+    font-size: 1.1rem; color: rgba(255,255,255,0.88); line-height: 1.7;
+    margin-bottom: 28px; font-weight: 300; max-width: 500px;
+  }
+  .icp-hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+  .icp-btn-blue {
+    background: var(--dark); color: #fff; padding: 13px 28px; border-radius: 50px;
+    font-weight: 700; font-size: 0.95rem; text-decoration: none; transition: 0.2s;
+    display: inline-block;
+  }
+  .icp-btn-blue:hover { background: var(--p); color: #fff; }
+  .icp-btn-orange {
+    background: var(--o); color: #fff; padding: 13px 28px; border-radius: 50px;
+    font-weight: 700; font-size: 0.95rem; text-decoration: none; transition: 0.2s;
+    display: inline-block;
+  }
+  .icp-btn-orange:hover { background: #d4611a; color: #fff; }
+  .icp-hero-flags {
+    display: flex; gap: 10px; align-items: center; margin-top: 20px;
+  }
+  .icp-hero-flags img { width: 40px; height: 28px; object-fit: cover; border-radius: 3px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+
+  /* -- PARTNERS STRIP -- */
+  .icp-partners {
+    background: #fff; padding: 32px 40px;
+    border-bottom: 3px solid var(--o);
+  }
+  .icp-partners-inner { max-width: 1200px; margin: 0 auto; }
+  .icp-partners h2 {
+    font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 800;
+    color: var(--dark); text-align: center; margin: 0 0 24px;
+  }
+  .icp-partners-logos {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; flex-wrap: wrap;
+  }
+  .icp-partner-logo {
+    flex: 1; min-width: 200px; padding: 16px 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-right: 1px solid #e2e8f0;
+  }
+  .icp-partner-logo:last-child { border-right: none; }
+  .icp-partner-logo img { max-height: 55px; max-width: 160px; object-fit: contain; filter: none; }
+
+  /* -- MAIN CONTENT -- */
+  .icp-card {
+    background: rgba(245, 235, 210, 0.85);
+    border: 1px solid rgba(236,116,36,0.2);
+    border-radius: 12px; padding: 28px;
+  }
+  .icp-card h3 {
+    font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800;
+    color: var(--dark); margin: 0 0 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .icp-card h3 span { color: var(--o); }
+
+  /* Certification Programs card */
+  .icp-checklist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .icp-checklist li {
+    display: flex; align-items: center; gap: 12px;
+    font-weight: 600; font-size: 1rem; color: #1a0a2e;
+  }
+  .icp-check {
+    width: 22px; height: 22px; background: var(--o); border-radius: 4px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .icp-check svg { width: 14px; height: 14px; stroke: #fff; stroke-width: 3; }
+
+  /* -- BOTTOM TAGLINE BAR -- */
+  .icp-tagline-bar {
+    background: linear-gradient(90deg, #3a1259 0%, var(--o) 50%, #3a1259 100%);
+    color: #fff; text-align: center; padding: 18px 20px;
+    font-size: 1.15rem; font-weight: 700; letter-spacing: 0.5px;
+  }
+  .icp-tagline-bar em { font-style: normal; color: #fff1dc; }
+
+  @media (max-width: 900px) {
+    .icp-hero-inner { grid-template-columns: 1fr; }
+    .icp-partner-logo { min-width: 150px; border-right: none; border-bottom: 1px solid #e2e8f0; }
+    .icp-hero-inner { padding: 100px 20px 50px; }
+    .icp-partners { padding: 24px 20px; }
+  }
+
+  /* -- Lucide icon replacements -- */
+
+  /* Flag badges replacing emoji flags */
+  .icp-hero-flags { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+  .icp-flag-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.14); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.28); border-radius: 50px;
+    padding: 6px 14px; color: #fff;
+    font-size: .8rem; font-weight: 700; letter-spacing: .4px;
+  }
+  .icp-flag-badge .lucide { width: 13px; height: 13px; stroke: #ec7424; flex-shrink: 0; }
+
+  /* Card heading icons replacing &ndash; */
+  .icp-card h3 { display: flex; align-items: center; gap: 10px; }
+  .icp-card h3 .lucide {
+    width: 20px; height: 20px; stroke: var(--o);
+    flex-shrink: 0; stroke-width: 2.5;
+  }
+
+  /* -- AHA COURSES SECTION -- */
+  .aha-section { background: #fff; padding: 60px 40px; border-top: 3px solid var(--o); }
+  .aha-inner { max-width: 1200px; margin: 0 auto; }
+  .aha-head { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 8px; }
+  .aha-head img { height: 46px; width: auto; }
+  .aha-section h2 { font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--dark); text-align: center; margin: 0; }
+  .aha-section h2 span { color: var(--o); }
+  .aha-sub { text-align: center; color: #64748b; font-size: 1rem; max-width: 620px; margin: 6px auto 34px; line-height: 1.6; }
+  .aha-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .aha-card {
+    display: flex; flex-direction: column;
+    background: rgba(245, 235, 210, 0.55);
+    border: 1px solid rgba(236,116,36,0.22);
+    border-radius: 12px; padding: 24px; text-decoration: none;
+    transition: transform .2s, box-shadow .2s, border-color .2s;
+  }
+  .aha-card:hover { transform: translateY(-5px); box-shadow: 0 16px 32px rgba(74,26,109,0.14); border-color: var(--o); }
+  .aha-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .aha-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #ec7424, #4a1a6d); }
+  .aha-icon .lucide { width: 24px; height: 24px; stroke: #fff; stroke-width: 2; }
+  .aha-dur { font-size: .78rem; font-weight: 700; color: var(--o); background: rgba(236,116,36,0.12); padding: 5px 12px; border-radius: 50px; }
+  .aha-card h3 { font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 800; color: var(--dark); margin: 0 0 8px; line-height: 1.3; }
+  .aha-card p { font-size: .9rem; color: #475569; line-height: 1.6; margin: 0 0 16px; flex-grow: 1; }
+  .aha-cta { display: inline-flex; align-items: center; gap: 6px; font-size: .88rem; font-weight: 700; color: var(--o); }
+  .aha-cta .lucide { width: 15px; height: 15px; }
+  @media (max-width: 900px) { .aha-grid { grid-template-columns: 1fr; } .aha-section { padding: 40px 20px; } }
+
+  /* -- AMCA USA CERTIFICATION SECTION -- */
+  .amca-section { background: #fff; padding: 60px 40px; border-top: 3px solid var(--o); }
+  .amca-inner { max-width: 1200px; margin: 0 auto; }
+  .amca-head { display: flex; align-items: center; gap: 24px; margin-bottom: 18px; }
+  .amca-head-logo { height: 64px; width: auto; flex-shrink: 0; object-fit: contain; }
+  .amca-eyebrow {
+    display: inline-block; background: rgba(236,116,36,0.12); color: var(--o);
+    font-size: .75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+    padding: 5px 14px; border-radius: 50px; margin-bottom: 10px;
+  }
+  .amca-section h2 {
+    font-family: 'Outfit', sans-serif; font-size: 1.75rem; font-weight: 800;
+    color: var(--dark); margin: 0; line-height: 1.25;
+  }
+  .amca-section h2 span { color: var(--o); }
+  .amca-intro { color: #475569; font-size: 1.02rem; line-height: 1.75; max-width: 900px; margin: 0 0 32px; }
+
+  /* Two-column layout: main content + duration sidebar */
+  .amca-layout { display: grid; grid-template-columns: 1fr 300px; gap: 32px; align-items: start; }
+
+  .amca-grid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 22px; align-items: stretch; }
+  .amca-grid .icp-card { display: flex; flex-direction: column; }
+  .amca-note { font-size: .85rem; color: #64748b; margin: 14px 0 0; line-height: 1.6; }
+
+  .amca-qual-row { margin-bottom: 16px; }
+  .amca-qual-row:last-child { margin-bottom: 0; }
+  .amca-qual-label {
+    display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--o); margin-bottom: 4px;
+  }
+  .amca-qual-row strong { display: block; color: #1a0a2e; font-size: .95rem; line-height: 1.5; font-weight: 600; }
+
+  /* Sidebar: mirrors the standard course-sidebar (see sdc-canada-certification) */
+  .amca-sidebar { position: sticky; top: 100px; }
+
+  .amca-careers { margin-top: 32px; }
+  .amca-careers h3 {
+    font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 800; color: var(--dark);
+    display: flex; align-items: center; gap: 10px; margin: 0 0 8px;
+  }
+  .amca-careers h3 .lucide { width: 20px; height: 20px; stroke: var(--o); }
+  .amca-careers-sub { color: #64748b; font-size: .92rem; margin: 0 0 16px; }
+  .amca-career-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .amca-career-pill {
+    background: rgba(74,26,109,0.06); border: 1px solid rgba(236,116,36,0.3);
+    color: var(--dark); font-weight: 700; font-size: .88rem;
+    padding: 9px 18px; border-radius: 50px;
+  }
+
+  @media (max-width: 900px) {
+    .amca-layout { grid-template-columns: 1fr; }
+    .amca-sidebar { position: static; }
+    .amca-grid { grid-template-columns: 1fr 1fr; }
+    .amca-head { flex-direction: column; align-items: flex-start; gap: 14px; }
+    .amca-section { padding: 40px 20px; }
+  }
+  @media (max-width: 600px) {
+    .amca-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<!-- -- HERO -- -->
+<section class="icp-hero">
+  <img loading="lazy" decoding="async" class="icp-hero-img" src="../images/new-images/DSC00707.jpg.jpeg" alt="International Certification Pathways">
+  <div class="icp-hero-overlay"></div>
+  <div class="icp-hero-inner">
+    <div class="icp-hero-left">
+      <h1>International <span>Certification Pathways</span></h1>
+      <p>Gain globally recognized qualifications through <strong>AMCA USA</strong>, <strong>SDC Canada</strong>, and <strong>ICDL Global</strong>.</p>
+      <div class="icp-hero-btns">
+        <a href="../admissions#how-to-apply" class="icp-btn-blue">Learn About Certifications</a>
+        <a href="../courses" class="icp-btn-orange">View Accredited Courses</a>
+      </div>
+      <div class="icp-hero-flags">
+        <span class="icp-flag-badge"><i data-lucide="map-pin"></i> USA</span>
+        <span class="icp-flag-badge"><i data-lucide="map-pin"></i> Canada</span>
+        <span class="icp-flag-badge"><i data-lucide="map-pin"></i> Europe</span>
+        <span class="icp-flag-badge"><i data-lucide="map-pin"></i> Germany</span>
+      </div>
+    </div>
+    <div></div>
+  </div>
+</section>
+
+<!-- -- GLOBAL ACCREDITATION PARTNERS -- -->
+<div class="icp-partners">
+  <div class="icp-partners-inner">
+    <h2>Global Accreditation Partners</h2>
+    <div class="icp-partners-logos">
+      <div class="icp-partner-logo">
+        <img loading="lazy" decoding="async" src="../images/partners/amca.png" alt="AMCA USA">
+      </div>
+      <div class="icp-partner-logo">
+        <img loading="lazy" decoding="async" src="../images/partners/SDCC.png" alt="SDC Canada">
+      </div>
+      <div class="icp-partner-logo">
+        <img loading="lazy" decoding="async" src="../images/partners/ICDL.png" alt="ICDL Global">
+      </div>
+      <div class="icp-partner-logo">
+        <img loading="eager" decoding="async" src="../images/partners/American_Heart_Association_Logo.svg" alt="American Heart Association">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- -- AHA EMERGENCY CARE COURSES -- -->
+<section class="aha-section">
+  <div class="aha-inner">
+    <div class="aha-head">
+      <img loading="eager" decoding="async" src="../images/partners/American_Heart_Association_Logo.svg" alt="American Heart Association">
+      <h2>AHA <span>Emergency Care Courses</span></h2>
+    </div>
+    <p class="aha-sub">Globally recognized American Heart Association certifications delivered at GoCare &ndash; giving you life-saving skills and an international edge.</p>
+    <div class="aha-grid">
+
+      <a href="aha-emergency-care-programs" class="aha-card">
+        <div class="aha-card-top">
+          <div class="aha-icon"><i data-lucide="shield-check"></i></div>
+          <span class="aha-dur">Varies</span>
+        </div>
+        <h3>AHA Emergency Care Programs</h3>
+        <p>American Heart Association&ndash;certified emergency care training including BLS, ACLS, PALS and Heartsaver.</p>
+        <span class="aha-cta">Learn More <i data-lucide="arrow-right"></i></span>
+      </a>
+
+      <a href="basic-life-support-bls" class="aha-card">
+        <div class="aha-card-top">
+          <div class="aha-icon"><i data-lucide="heart-pulse"></i></div>
+          <span class="aha-dur">1 Day</span>
+        </div>
+        <h3>Basic Life Support (BLS)</h3>
+        <p>AHA-accredited BLS training for healthcare professionals and first responders.</p>
+        <span class="aha-cta">Learn More <i data-lucide="arrow-right"></i></span>
+      </a>
+
+      <a href="advanced-cardiac-life-support-acls" class="aha-card">
+        <div class="aha-card-top">
+          <div class="aha-icon"><i data-lucide="activity"></i></div>
+          <span class="aha-dur">2 Days</span>
+        </div>
+        <h3>Advanced Cardiac Life Support (ACLS)</h3>
+        <p>AHA-certified ACLS for managing cardiac emergencies and advanced resuscitation.</p>
+        <span class="aha-cta">Learn More <i data-lucide="arrow-right"></i></span>
+      </a>
+
+      <a href="pediatric-advanced-life-support-pals" class="aha-card">
+        <div class="aha-card-top">
+          <div class="aha-icon"><i data-lucide="baby"></i></div>
+          <span class="aha-dur">3 Days</span>
+        </div>
+        <h3>Pediatric Advanced Life Support (PALS)</h3>
+        <p>AHA-certified PALS covering paediatric emergencies and resuscitation protocols.</p>
+        <span class="aha-cta">Learn More <i data-lucide="arrow-right"></i></span>
+      </a>
+
+      <a href="heartsaver-first-aid" class="aha-card">
+        <div class="aha-card-top">
+          <div class="aha-icon"><i data-lucide="shield-plus"></i></div>
+          <span class="aha-dur">1 Day</span>
+        </div>
+        <h3>Heartsaver First Aid CPR &amp; AED</h3>
+        <p>AHA Heartsaver certification for first aid, CPR and AED use in any setting.</p>
+        <span class="aha-cta">Learn More <i data-lucide="arrow-right"></i></span>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- -- SDC CANADA CERTIFICATION COURSES -- -->
+<section class="aha-section">
+  <div class="aha-inner">
+    <div class="aha-head">
+      <img loading="eager" decoding="async" src="../images/partners/SDCC.png" alt="Skill Development Council Canada">
+      <h2>SDC Canada <span>Certification Courses</span></h2>
+    </div>
+    <p class="aha-sub">Globally recognized Skill Development Council (SDC) Canada certifications delivered at GoCare &ndash; validating your professional competence for healthcare roles worldwide.</p>
+    <div class="aha-grid">
+
+      <a href="sdc-canada-certification" class="aha-card">
+        <div class="aha-card-top">
+          <div class="aha-icon"><i data-lucide="stethoscope"></i></div>
+          <span class="aha-dur">Certificate</span>
+        </div>
+        <h3>Certificate in Nursing Assistant</h3>
+        <p>Canada-aligned training, examination and certification for nursing assistants in clinical settings.</p>
+        <span class="aha-cta">Learn More <i data-lucide="arrow-right"></i></span>
+      </a>
+
+      <a href="sdc-canada-certification" class="aha-card">
+        <div class="aha-card-top">
+          <div class="aha-icon"><i data-lucide="heart-pulse"></i></div>
+          <span class="aha-dur">Certificate</span>
+        </div>
+        <h3>Certificate in Health Care Assistant</h3>
+        <p>SDC Canada certification validating essential healthcare support and patient-care skills.</p>
+        <span class="aha-cta">Learn More <i data-lucide="arrow-right"></i></span>
+      </a>
+
+      <a href="sdc-canada-certification" class="aha-card">
+        <div class="aha-card-top">
+          <div class="aha-icon"><i data-lucide="heart-handshake"></i></div>
+          <span class="aha-dur">Certificate</span>
+        </div>
+        <h3>Certificate in Professional Caregiver</h3>
+        <p>Internationally recognized caregiver certification for professional home and facility-based care.</p>
+        <span class="aha-cta">Learn More <i data-lucide="arrow-right"></i></span>
+      </a>
+
+      <a href="sdc-canada-certification" class="aha-card">
+        <div class="aha-card-top">
+          <div class="aha-icon"><i data-lucide="award"></i></div>
+          <span class="aha-dur">Adv. Certificate</span>
+        </div>
+        <h3>Advanced Certificate in Health Care Assistant</h3>
+        <p>Advanced SDC Canada credential for healthcare assistants seeking senior support roles abroad.</p>
+        <span class="aha-cta">Learn More <i data-lucide="arrow-right"></i></span>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- -- AMCA USA CERTIFICATION DETAIL -- -->
+<section class="amca-section">
+  <div class="amca-inner">
+    <div class="amca-layout">
+      <div class="amca-main">
+        <div class="amca-head">
+          <img loading="lazy" decoding="async" class="amca-head-logo" src="../images/partners/amca.png" alt="AMCA USA">
+          <div>
+            <span class="amca-eyebrow">USA-Based Accredited Curriculum, Examination &amp; Certification</span>
+            <h2>The American Medical Certification Association <span>(AMCA) &ndash; USA</span></h2>
+          </div>
+        </div>
+        <p class="amca-intro">GoCare Training Institute offers USA&#8209;aligned curriculum training, examination, and certification through the American Medical Certification Association (AMCA) &mdash; a globally recognized U.S. credentialing body for healthcare support professionals. This pathway provides career, professional, and global recognition, enabling graduates to qualify for international healthcare roles across the USA, Canada, Europe, the Middle East, and Asia.</p>
+
+        <div class="amca-grid">
+
+          <div class="icp-card">
+            <h3><i data-lucide="badge-check"></i> Certification Options</h3>
+            <ul class="icp-checklist">
+              <li>
+                <div class="icp-check"><svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg></div>
+                Patient Care Technician (PCT)
+              </li>
+              <li>
+                <div class="icp-check"><svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg></div>
+                Nursing Assistant (CNA)
+              </li>
+            </ul>
+            <p class="amca-note">These certifications validate clinical competence and align with U.S. healthcare support standards.</p>
+          </div>
+
+          <div class="icp-card">
+            <h3><i data-lucide="user-check"></i> Who Qualifies?</h3>
+            <div class="amca-qual-row">
+              <span class="amca-qual-label">Qualification</span>
+              <strong>Medical and healthcare professionals</strong>
+            </div>
+            <div class="amca-qual-row">
+              <span class="amca-qual-label">Requirements</span>
+              <strong>A relevant Certificate, Diploma, or Degree qualification in a medical or healthcare field</strong>
+            </div>
+            <p class="amca-note">This ensures that only trained professionals pursue AMCA&rsquo;s internationally recognized credentials.</p>
+          </div>
+
+          <div class="icp-card">
+            <h3><i data-lucide="star"></i> Why Choose AMCA at GoCare?</h3>
+            <ul class="icp-checklist">
+              <li>
+                <div class="icp-check"><svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg></div>
+                USA-based curriculum &amp; assessment standards
+              </li>
+              <li>
+                <div class="icp-check"><svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg></div>
+                Internationally recognized certification
+              </li>
+              <li>
+                <div class="icp-check"><svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg></div>
+                Strengthens global employability
+              </li>
+              <li>
+                <div class="icp-check"><svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg></div>
+                Ideal for migration-linked healthcare opportunities
+              </li>
+              <li>
+                <div class="icp-check"><svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg></div>
+                Complements GoCare&rsquo;s accredited medical &amp; health sciences programs
+              </li>
+            </ul>
+          </div>
+
+        </div>
+
+        <div class="amca-careers">
+          <h3><i data-lucide="briefcase"></i> Career Opportunities with AMCA Certification</h3>
+          <p class="amca-careers-sub">AMCA-certified graduates qualify for roles such as:</p>
+          <div class="amca-career-grid">
+            <span class="amca-career-pill">Certified Nursing Assistant (CNA)</span>
+            <span class="amca-career-pill">Patient Care Technician (PCT)</span>
+            <span class="amca-career-pill">Home Health Aide</span>
+            <span class="amca-career-pill">Long-Term Care Assistant</span>
+            <span class="amca-career-pill">Hospital Support Staff</span>
+            <span class="amca-career-pill">International Caregiver</span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="course-sidebar amca-sidebar">
+        <div class="sidebar-card" style="background: #fcfcfc; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 30px;">
+          <div class="sidebar-duration-box" style="background: linear-gradient(135deg, #fff7ed, #fdf1e4); border: 1px solid #fbdcb5; border-radius: 12px; padding: 22px 24px; margin-bottom: 22px; text-align: center;">
+            <span style="display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--gray); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px;"><i data-lucide="clock" style="width: 14px; height: 14px;"></i> Training Duration</span>
+            <div style="font-family: 'Outfit', sans-serif; font-size: 2.1rem; font-weight: 800; color: var(--dark); line-height: 1.1;">1 Month</div>
+            <p style="margin: 8px 0 0; color: var(--o); font-weight: 700; font-size: 13px;">4 Weeks Intensive Training</p>
+          </div>
+          <div class="sidebar-btns" style="display: grid; gap: 15px;">
+            <a href="../apply" class="btn btn-primary" style="text-align: center;">Apply Now</a>
+            <a href="../contact" class="btn btn-outline" style="text-align: center;"><i data-lucide="mail"></i> Contact Admissions</a>
+          </div>
+
+          <div class="sidebar-info-list" style="margin-top: 25px;">
+            <div class="side-info-item" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dashed #eee;">
+              <span style="color: var(--gray);">Accreditation</span>
+              <strong style="color: var(--dark); text-align: right;">AMCA (USA)</strong>
+            </div>
+            <div class="side-info-item" style="display: flex; justify-content: space-between; padding: 12px 0;">
+              <span style="color: var(--gray);">Global Reach</span>
+              <strong style="color: var(--dark); text-align: right; max-width: 60%;">USA, Canada, Europe, Middle East, Asia</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="help-card" style="background: var(--o); color: #F5F0E8; padding: 30px; border-radius: 12px; text-align: center;">
+          <h4 style="color: #F5F0E8; margin-bottom: 10px;">Need Help?</h4>
+          <p style="color: rgba(255,255,255,0.8); margin-bottom: 20px;">Our team is ready to guide you through the process.</p>
+          <a href="tel:+254703115502" class="help-link" style="display: inline-flex; align-items: center; gap: 10px; font-size: 20px; font-weight: bold; color: #F5F0E8;"><i data-lucide="phone-call"></i> 0703 115 502</a>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- -- BOTTOM TAGLINE BAR -- -->
+<div class="icp-tagline-bar">Your Gateway to <em>International Certification and Career Mobility</em></div>
+  <footer id="contactSection" class="footer">
+    <!-- Decorative pattern overlay -->
+    <div class="footer-pattern" aria-hidden="true"></div>
+
+    <div class="footer-top footer-top--five">
+      <!-- Brand Column -->
+      <div class="footer-brand">
+        <a href="#" class="logo">
+          <img loading="eager" decoding="async" src="../images/gocare-institute-logo-white.png" alt="GoCare Logo" style="height: 48px; width: auto; margin-bottom: 8px;">
+        </a>
+        <p>GoCare Training Institute offers expert-led healthcare education to shape your future.</p>
+        <p class="footer-tagline"><em>Train with the Experts&hellip; Become an Expert!</em></p>
+      </div>
+
+      <!-- Schools & Programs Column -->
+      <div class="footer-col">
+        <h4>Schools &amp; Programs</h4>
+        <ul class="footer-icon-list">
+          <li>
+            <a href="../schools/medical-health-sciences">
+              School of Medical &amp; Health Sciences
+            </a>
+          </li>
+          <li>
+            <a href="../schools/hospitality-management">
+              School of Hospitality Management
+            </a>
+          </li>
+          <li>
+            <a href="../schools/social-sciences-business">
+              School of Social Sciences &amp; Business Management
+            </a>
+          </li>
+          <li>
+            <a href="../schools/international-certifications">
+              International Certifications
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Resources Column -->
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <ul class="footer-icon-list">
+          <li>
+            <a href="../student-resources">
+              Student Resources
+            </a>
+          </li>
+          <li>
+            <a href="../downloads">
+              Downloads
+            </a>
+          </li>
+          <li>
+            <a href="../blog">
+              Blogs &amp; Articles
+            </a>
+          </li>
+          <li>
+            <a href="../careers">
+              Career Pathways
+            </a>
+          </li>
+          <li>
+            <a href="../student-testimonials-success-stories">
+              Testimonials &amp; Success Stories
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Quick Links Column -->
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <ul class="footer-icon-list">
+          
+          
+          
+          <li><a href="../industrial-attachment">Industrial &amp; Field Attachment</a></li><li><a href="../student-support-services">Student Support Services</a></li><li><a href="../modes-of-study">Modes of Study</a></li><li>
+            <a href="../apply">
+              Apply Now
+            </a>
+          </li>
+          <li>
+            <a href="../docs/GoCare%20Training%20Institute%20Prospectus.pdf" target="_blank">
+              Download Prospectus
+            </a>
+          </li>
+          <li>
+            <a href="#">
+              Student Portal
+            </a>
+          </li>
+          <li>
+            <a href="#">
+              Staff Portal
+            </a>
+          </li>
+        
+          <li><a href="../hostels-and-accommodation">Hostels &amp; Accommodation</a></li></ul>
+      </div>
+
+      <!-- Contact Us Column -->
+      <div class="footer-col footer-contact-col">
+        <h4>Contact Us</h4>
+        <div class="contact-group">
+          <div class="contact-icon-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            <span class="contact-detail-text">Nairobi City Campus, Nairobi CBD, GatKim Complex, Temple Road</span>
+          </div>
+        </div>
+        <div class="contact-group">
+          <div class="contact-icon-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            <span class="contact-detail-text">Thika Road Campus, Eastern Bypass, Kamakis, Ruiru</span>
+          </div>
+        </div>
+        <div class="contact-group">
+          <div class="contact-icon-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+            </svg>
+            <span class="contact-detail-text">0703 115 502 | 0745 229 485 | 0745 220 344</span>
+          </div>
+        </div>
+        <div class="contact-group">
+          <div class="contact-icon-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+            <a href="mailto:info@gocareinstitute.ac.ke" class="contact-detail-text" style="color:inherit;text-decoration:none">info@gocareinstitute.ac.ke</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accreditation Tagline Bar -->
+    <div class="footer-accred-bar">
+      <p class="accred-tagline">TRAIN WITH THE EXPERTS &hellip; BECOME AN EXPERT!</p>
+      <div class="accred-badges">
+        <span class="accred-badge"><img loading="eager" decoding="async" src="../images/partners/TVETA.png" alt="TVETA logo"></span>
+        <span class="accred-badge"><img loading="eager" decoding="async" src="../images/partners/tveta curriculum.png" alt="TVET CDACC logo"></span>
+        <span class="accred-badge"><img loading="eager" decoding="async" src="../images/partners/national_industrial_training_authority_logo.png" alt="NITA logo"></span>
+        <span class="accred-badge"><img loading="eager" decoding="async" src="../images/partners/KHPOA.png" alt="KHPOA logo"></span>
+        <span class="accred-badge"><img loading="eager" decoding="async" src="../images/partners/ministry of education.png" alt="Ministry of Education logo"></span>
+        <span class="accred-badge"><img loading="eager" decoding="async" src="../images/partners/knec.png" alt="KNEC logo"></span>
+        <span class="accred-badge"><img loading="eager" decoding="async" src="../images/partners/amca.png" alt="AMCA logo"></span>
+        <span class="accred-badge"><img loading="lazy" decoding="async" src="../images/partners/SDCC.png" alt="SDC Canada"></span>
+        <span class="accred-badge"><img loading="eager" decoding="async" src="../images/partners/American_Heart_Association_Logo.svg" alt="American Heart Association logo"></span>
+        <span class="accred-badge"><img loading="lazy" decoding="async" src="../images/partners/amca exams.png" alt="AMCA Exams"></span>
+        <span class="accred-badge"><img loading="lazy" decoding="async" src="../images/partners/ICDL.png" alt="ICDL"></span>
+        <span class="accred-badge"><img loading="lazy" decoding="async" src="../images/partners/KATTI.png" alt="KATTI"></span>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="footer-bottom footer-bottom--redesigned">
+      <div class="footer-bottom-left">
+        <!-- Social Icons -->
+        <div class="socials">
+          <!-- Facebook -->
+          <a href="https://www.facebook.com/GoCareTrainingInstitute/" target="_blank" rel="noopener noreferrer" class="social-btn" aria-label="Facebook">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+            </svg>
+          </a>
+          <!-- Instagram -->
+          <a href="https://www.instagram.com/gocaretraininginstitute/" target="_blank" rel="noopener noreferrer" class="social-btn" aria-label="Instagram">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+            </svg>
+          </a>
+          <!-- X -->
+          <a href="https://x.com/GoCareInstitute" target="_blank" rel="noopener noreferrer" class="social-btn" aria-label="X">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </a>
+          <!-- TikTok -->
+          <a href="https://www.tiktok.com/@gocaretraininginstitute" target="_blank" rel="noopener noreferrer" class="social-btn" aria-label="TikTok">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.08-.14 1.62.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
+            </svg>
+          </a>
+          <!-- LinkedIn -->
+          <a href="https://ke.linkedin.com/company/gocaretraininginstitute" target="_blank" rel="noopener noreferrer" class="social-btn" aria-label="LinkedIn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+            </svg>
+          </a>
+          <!-- YouTube -->
+          <a href="https://www.youtube.com/@gocaretraininginstitute" target="_blank" rel="noopener noreferrer" class="social-btn" aria-label="YouTube">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+            </svg>
+          </a>
+        </div>
+      </div>
+      <p class="footer-copy">&copy; 2026 GoCare Training Institute. All rights reserved. | TVETA Accredited &amp; Licensed | TVET CDACC Approved | NITA Accredited | Globally Recognized</p>
+      </div>
+  </footer>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.lucide) lucide.createIcons();
+    });
+  </script>
+  <!-- BACK TO TOP -->
+  <button class="back-to-top" id="backToTop" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+  </button>
+  <script>
+    (function(){
+      var btn = document.getElementById('backToTop');
+      if(!btn) return;
+      window.addEventListener('scroll', function(){
+        btn.classList.toggle('visible', window.scrollY > 400);
+      });
+      btn.addEventListener('click', function(){
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    })();
+  </script>
+  <script src="../mobile-nav.js"></script>
+  <script src="../search-index.js" defer></script>
+  <script id="gc-search-js" src="../search.js" defer></script>
+  <script src="../accessibility.js" defer></script>
+</body>
+</html>
+
