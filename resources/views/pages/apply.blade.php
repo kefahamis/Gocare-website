@@ -1489,6 +1489,7 @@
     }
 
     var mpesaPollTimer = null;
+    var manualVerifyTimer = null;
     var mpesaReference = null;
 
     function setMpesaStatus(color, html) {
@@ -1665,6 +1666,16 @@
         var txn = document.getElementById('f_txn');
         if (txn && !txn.value) { txn.value = code; }
 
+        if (data.verifying) {
+          // Safaricom answers the status query on its own callback, so watch
+          // the application until that lands.
+          setManualStatus('#1565c0', '&#x23F3; ' + data.message);
+          btn.innerHTML = '<i data-lucide="loader"></i> Verifying&hellip;';
+          if (window.lucide) lucide.createIcons();
+          pollManualVerification(data.reference, code);
+          return;
+        }
+
         setManualStatus('#2e7d32', '&#10003; ' + data.message + ' Reference ' + data.reference + '.');
         btn.innerHTML = '<i data-lucide="check"></i> Recorded';
         if (window.lucide) lucide.createIcons();
@@ -1675,6 +1686,65 @@
         btn.innerHTML = '<i data-lucide="check-circle-2"></i> Completed';
         if (window.lucide) lucide.createIcons();
       }
+    }
+
+    /**
+     * Watch a manually entered code until Safaricom's Transaction Status
+     * result lands. Uses its own timer so it cannot clash with the STK poll.
+     */
+    function manualVerifyDone(html, color, label) {
+      if (manualVerifyTimer) { clearInterval(manualVerifyTimer); manualVerifyTimer = null; }
+      setManualStatus(color, html);
+      var btn = document.getElementById('manualPaidBtn');
+      btn.innerHTML = label;
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function pollManualVerification(reference, code) {
+      if (manualVerifyTimer) { clearInterval(manualVerifyTimer); manualVerifyTimer = null; }
+
+      var elapsed = 0;
+
+      manualVerifyTimer = setInterval(async function () {
+        elapsed += 4;
+
+        try {
+          const res = await fetch('/applications/status/' + reference, {
+            headers: { 'Accept': 'application/json' }
+          });
+          const data = await res.json();
+
+          if (data.payment_status === 'paid') {
+            manualVerifyDone(
+              '&#10003; Payment of code ' + code + ' confirmed by M-Pesa. Reference ' + reference + '.',
+              '#2e7d32',
+              '<i data-lucide="check"></i> Verified'
+            );
+            return;
+          }
+
+          // Safaricom answered, but the code did not check out.
+          if (data.payment_note) {
+            manualVerifyDone(
+              '&#x26A0; ' + data.payment_note + ' Reference ' + reference + '.',
+              '#c0392b',
+              '<i data-lucide="check-circle-2"></i> Completed'
+            );
+            document.getElementById('manualPaidBtn').disabled = false;
+            return;
+          }
+        } catch (err) {
+          console.error('[mpesa-manual] poll', err);
+        }
+
+        if (elapsed >= 120) {
+          manualVerifyDone(
+            '&#x23F3; Your payment is recorded and awaiting confirmation. Reference ' + reference + '.',
+            '#1565c0',
+            '<i data-lucide="check"></i> Recorded'
+          );
+        }
+      }, 4000);
     }
 
     function pollMpesaStatus(reference) {

@@ -15,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(NormalizeInternalLinks::class);
         $middleware->validateCsrfTokens(except: [
             'mpesa/callback',
+            'mpesa/status/result',
+            'mpesa/status/timeout',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

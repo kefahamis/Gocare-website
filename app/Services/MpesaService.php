@@ -124,6 +124,141 @@ class MpesaService
     }
     
     /**
+     * Is the Transaction Status query configured?
+     *
+     * When it is not, the manual payment flow falls back to simply recording
+     * the applicant's code, exactly as it behaved before verification existed.
+     */
+    public function statusQueryConfigured(): bool
+    {
+        $status = config('mpesa.status');
+
+        if (blank($status['initiator'] ?? null)) {
+            return false;
+        }
+
+        if (blank($status['security_credential'] ?? null) && blank($status['initiator_password'] ?? null)) {
+            return false;
+        }
+
+        return str_starts_with((string) ($status['result_url'] ?? ''), 'https://');
+    }
+
+    /**
+     * Ask Safaricom to confirm a single M-Pesa confirmation code.
+     *
+     * This endpoint is asynchronous: the POST is only an acknowledgement, and
+     * the transaction details arrive later on the configured ResultURL. The
+     * returned OriginatorConversationID is what ties that result back to us.
+     *
+     * @see https://api.safaricom.co.ke/mpesa/transactionstatus/v1/query
+     */
+    public function transactionStatus(string $transactionCode, string $reference)
+    {
+        $status = config('mpesa.status');
+
+        $resultUrl = (string) $status['result_url'];
+        $timeoutUrl = (string) $status['timeout_url'];
+
+        // Same rule as the STK callback: Daraja silently drops anything that is
+        // not a publicly reachable absolute https URL.
+        foreach (['MPESA_STATUS_RESULT_URL' => $resultUrl, 'MPESA_STATUS_TIMEOUT_URL' => $timeoutUrl] as $name => $url) {
+            if (!str_starts_with($url, 'https://')) {
+                throw new Exception(
+                    $name . ' must be an absolute https:// URL reachable from the internet. Got: ' . ($url ?: '(empty)')
+                );
+            }
+        }
+
+        $token = $this->getAccessToken();
+
+        $body = [
+            'Initiator' => $status['initiator'],
+            'SecurityCredential' => $this->securityCredential(),
+            'CommandID' => 'TransactionStatusQuery',
+            'TransactionID' => strtoupper(trim($transactionCode)),
+            // For Buy Goods this is the Head Office / store number, as with the
+            // STK password above — not the till customers pay to.
+            'PartyA' => $this->shortcode,
+            'IdentifierType' => (string) $status['identifier_type'],
+            'ResultURL' => $resultUrl,
+            'QueueTimeOutURL' => $timeoutUrl,
+            'Remarks' => 'Application fee verification',
+            'Occasion' => substr($reference, 0, 12),
+        ];
+
+        $response = Http::withToken($token)
+            ->post($this->baseUrl . '/mpesa/transactionstatus/v1/query', $body);
+
+        if ($response->successful()) {
+            $json = $response->json();
+
+            // As with the STK push, a 200 can still carry a rejection.
+            if (isset($json['ResponseCode']) && (string) $json['ResponseCode'] !== '0') {
+                Log::error('M-Pesa transaction status rejected', [
+                    'request' => $this->redact($body),
+                    'response' => $json,
+                ]);
+
+                throw new Exception('M-Pesa rejected the transaction status query: ' . $response->body());
+            }
+
+            return $json;
+        }
+
+        Log::error('M-Pesa Transaction Status Failed', [
+            'endpoint' => $this->baseUrl,
+            'request' => $this->redact($body),
+            'status' => $response->status(),
+            'response' => $response->body(),
+        ]);
+
+        throw new Exception('Failed to query M-Pesa transaction status: ' . $response->body());
+    }
+
+    /**
+     * The initiator password encrypted with the Safaricom public certificate.
+     */
+    protected function securityCredential(): string
+    {
+        $status = config('mpesa.status');
+
+        if (filled($status['security_credential'] ?? null)) {
+            return (string) $status['security_credential'];
+        }
+
+        $certificatePath = (string) $status['certificate_path'];
+
+        if (!is_readable($certificatePath)) {
+            throw new Exception('The Safaricom public certificate could not be read at: ' . ($certificatePath ?: '(empty)'));
+        }
+
+        $publicKey = openssl_pkey_get_public((string) file_get_contents($certificatePath));
+
+        if ($publicKey === false) {
+            throw new Exception('The Safaricom public certificate at ' . $certificatePath . ' is not a valid certificate.');
+        }
+
+        $encrypted = '';
+
+        if (!openssl_public_encrypt((string) $status['initiator_password'], $encrypted, $publicKey, OPENSSL_PKCS1_PADDING)) {
+            throw new Exception('Could not build the M-Pesa security credential.');
+        }
+
+        return base64_encode($encrypted);
+    }
+
+    /**
+     * Keep the encrypted credential out of the logs.
+     */
+    protected function redact(array $body): array
+    {
+        unset($body['SecurityCredential']);
+
+        return $body;
+    }
+
+    /**
      * Helper to format phone number
      */
     protected function formatPhoneNumber(string $phone): string

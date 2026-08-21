@@ -13,7 +13,9 @@ class Application extends Model
         'amount',
         'checkout_request_id',
         'mpesa_receipt',
+        'status_conversation_id',
         'payment_status',
+        'payment_note',
         'data',
         'submitted_at',
     ];

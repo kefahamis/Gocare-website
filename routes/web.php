@@ -19,6 +19,8 @@ Route::post('/applications/manual', [ApplicationController::class, 'manualPaymen
 Route::post('/applications/paid', [ApplicationController::class, 'confirmManualPayment'])->name('applications.paid');
 Route::get('/applications/status/{reference}', [ApplicationController::class, 'status'])->name('applications.status');
 Route::post('/mpesa/callback', [ApplicationController::class, 'mpesaCallback'])->name('mpesa.callback');
+Route::post('/mpesa/status/result', [ApplicationController::class, 'mpesaStatusCallback'])->name('mpesa.status.result');
+Route::post('/mpesa/status/timeout', [ApplicationController::class, 'mpesaStatusTimeout'])->name('mpesa.status.timeout');
 
 Route::get('/courses', [PageController::class, 'courses'])->name('courses');
 Route::get('/blog', [PageController::class, 'blog'])->name('blog');

@@ -160,3 +160,80 @@ Neither payment method will work end-to-end until these are resolved:
 2. **`app/Models/Application.php` `$fillable` is missing the M-Pesa columns** (see section 4.3).
 3. **Callback URL mismatch.** The route is `POST /mpesa/callback` (`routes/web.php:18`), but the config default is `APP_URL . '/api/mpesa/callback'` and `.env` sets `MPESA_CALLBACK_URL="/api/mpesa/callback"`. The configured URL must match the actual route, otherwise Safaricom's callback is never delivered. This must be corrected before testing.
 4. **`.env` still contains placeholder credentials** (`MPESA_CONSUMER_KEY=YOUR_CONSUMER_KEY`, etc.). Replace with real Daraja credentials.
+
+## 9. Confirming a manually typed code (Transaction Status)
+
+When the STK prompt never arrives, the applicant pays from their own M-Pesa menu and
+types the confirmation code from the SMS into **Pay manually via M-Pesa**. Previously
+that code was recorded and trusted; it is now checked against the Daraja
+[Transaction Status API](https://api.safaricom.co.ke/mpesa/transactionstatus/v1/query)
+before the application can reach `payment_status = paid`.
+
+### Environment
+
+The query reuses `MPESA_ENV`, `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`,
+`MPESA_SHORTCODE` and `MPESA_TILL_NUMBER`. Only these are new:
+
+```env
+MPESA_STATUS_INITIATOR=your-api-operator-username
+MPESA_STATUS_INITIATOR_PASSWORD=your-api-operator-password
+MPESA_STATUS_IDENTIFIER_TYPE=4
+MPESA_STATUS_RESULT_URL=https://your-domain/mpesa/status/result
+MPESA_STATUS_TIMEOUT_URL=https://your-domain/mpesa/status/timeout
+```
+
+The initiator is an API operator created in the M-Pesa org portal with the
+**Transaction Status Query** role. It is *not* `MPESA_PASSKEY`, which stays STK-only.
+Either set `MPESA_STATUS_SECURITY_CREDENTIAL` to an already-encrypted credential, or
+leave it blank and place the Safaricom production certificate at
+`storage/app/mpesa/production.cer` so the initiator password is encrypted at runtime
+(override the path with `MPESA_STATUS_CERTIFICATE_PATH`).
+
+`PartyA` is `MPESA_SHORTCODE`, the Head Office / store number the passkey was issued
+against — the same number the STK password is built from, not the till customers pay
+to. `MPESA_STATUS_IDENTIFIER_TYPE` is `1` for an MSISDN, `2` for a till number and `4`
+for an organization shortcode; use `4` with the store number. If Safaricom answers with
+an invalid-party error, the store and till numbers are the wrong way round.
+
+Both URLs must be absolute `https://` and publicly reachable, exactly like
+`MPESA_CALLBACK_URL`. The service refuses to send the query otherwise rather than
+letting Daraja drop it silently. Their routes are exempt from CSRF alongside
+`mpesa/callback`.
+
+Run `php artisan migrate` for the new `status_conversation_id` and `payment_note`
+columns on `applications`.
+
+### Flow
+
+1. `POST /applications/paid` parks the claim as `awaiting_verification`, stores the
+   code in `mpesa_receipt`, and sends the Transaction Status query.
+2. Daraja only acknowledges; the real outcome arrives later at
+   `POST /mpesa/status/result`, matched back by the `OriginatorConversationID` saved in
+   `status_conversation_id`.
+3. The browser polls `/applications/status/{reference}` until `payment_status` becomes
+   `paid` or a `payment_note` explains why the code was not accepted.
+
+A code is accepted only when Safaricom reports `ResultCode 0`, a completed transaction,
+payment credited to the till or store number, and an amount at least the application
+fee. A code already confirmed against another application is refused outright.
+
+### Deliberate fallbacks
+
+- **Leave `MPESA_STATUS_INITIATOR` blank** and the manual flow behaves exactly as it
+  did before: the code is recorded as `awaiting_verification` for an admin to reconcile
+  and nothing is sent to Safaricom. This is the safe way to deploy the change first and
+  switch verification on afterwards.
+- **A failed check never sets `payment_status = failed`.** A mistyped code would
+  otherwise cost an applicant a payment they really made, so the claim stays
+  `awaiting_verification` with the reason in `payment_note`.
+- **A Daraja outage still records the claim.** Verification is a check on top of the
+  existing behaviour, never a gate in front of it.
+- **An STK-confirmed payment is never walked back** by a later status result.
+
+### Residual risk
+
+Like `/mpesa/callback`, the result endpoint is unauthenticated — Safaricom does not
+sign its callbacks. A result is only accepted when its `OriginatorConversationID`
+matches one this site generated, which is the same bar the STK callback sets with
+`CheckoutRequestID`. If you want a stronger guarantee, put an unguessable segment in
+`MPESA_STATUS_RESULT_URL` and match the route accordingly.
