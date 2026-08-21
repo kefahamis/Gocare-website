@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GoCare Training Institute — cPanel Deployment Guide</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+
+  :root {
+    --ink:      #1a1d23;
+    --muted:    #5b6472;
+    --rule:     #d9dee6;
+    --accent:   #0f5c4a;
+    --accent-lt:#e8f2ef;
+    --warn:     #8a4b00;
+    --warn-bg:  #fdf4e7;
+    --warn-ru:  #e8b877;
+    --danger:   #8c2f2f;
+    --danger-bg:#fbeeee;
+    --danger-ru:#dfa5a5;
+    --code-bg:  #f5f7f9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink);
+    font-size: 10.2pt;
+    line-height: 1.55;
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---------- Cover ---------- */
+  .cover {
+    height: 247mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    page-break-after: always;
+  }
+  .cover .eyebrow {
+    font-size: 9pt;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 10mm;
+  }
+  .cover h1 {
+    font-size: 30pt;
+    line-height: 1.15;
+    margin: 0 0 6mm 0;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+  .cover .sub {
+    font-size: 12pt;
+    color: var(--muted);
+    margin: 0 0 14mm 0;
+    max-width: 130mm;
+  }
+  .cover .rule { height: 3px; width: 46mm; background: var(--accent); margin-bottom: 12mm; }
+  .cover dl {
+    display: grid;
+    grid-template-columns: 34mm 1fr;
+    row-gap: 2.2mm;
+    margin: 0;
+    font-size: 9.6pt;
+    max-width: 130mm;
+  }
+  .cover dt { color: var(--muted); }
+  .cover dd { margin: 0; font-weight: 550; }
+
+  /* ---------- Typography ---------- */
+  h2 {
+    font-size: 15pt;
+    margin: 11mm 0 3.5mm 0;
+    padding-bottom: 2mm;
+    border-bottom: 2px solid var(--accent);
+    font-weight: 620;
+    page-break-after: avoid;
+    letter-spacing: -0.005em;
+  }
+  h2:first-of-type { margin-top: 0; }
+  h2 .num {
+    display: inline-block;
+    min-width: 8mm;
+    color: var(--accent);
+  }
+  h3 {
+    font-size: 11pt;
+    margin: 6mm 0 2mm 0;
+    font-weight: 620;
+    page-break-after: avoid;
+  }
+  p { margin: 0 0 3mm 0; }
+  ul, ol { margin: 0 0 3.5mm 0; padding-left: 5.5mm; }
+  li { margin-bottom: 1.4mm; }
+  a { color: var(--accent); text-decoration: none; }
+  strong { font-weight: 650; }
+
+  code {
+    font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
+    font-size: 9pt;
+    background: var(--code-bg);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.3mm 1.1mm;
+    white-space: nowrap;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 3px;
+    padding: 3mm 3.5mm;
+    margin: 0 0 4mm 0;
+    font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
+    font-size: 8.6pt;
+    line-height: 1.5;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    page-break-inside: avoid;
+  }
+  pre code {
+    background: none; border: none; padding: 0;
+    font-size: inherit; white-space: pre-wrap;
+  }
+  pre .c { color: var(--muted); }
+
+  /* ---------- Callouts ---------- */
+  .box {
+    border: 1px solid var(--rule);
+    border-left: 3.5px solid var(--accent);
+    background: var(--accent-lt);
+    border-radius: 3px;
+    padding: 3mm 4mm;
+    margin: 0 0 4mm 0;
+    page-break-inside: avoid;
+  }
+  .box .label {
+    display: block;
+    font-size: 8pt;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 1.5mm;
+  }
+  .box p:last-child, .box ul:last-child, .box ol:last-child { margin-bottom: 0; }
+
+  .box.warn { border-left-color: var(--warn-ru); background: var(--warn-bg); }
+  .box.warn .label { color: var(--warn); }
+  .box.danger { border-left-color: var(--danger-ru); background: var(--danger-bg); }
+  .box.danger .label { color: var(--danger); }
+
+  /* ---------- Tables ---------- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.2pt;
+    margin: 0 0 4mm 0;
+    page-break-inside: avoid;
+  }
+  th {
+    text-align: left;
+    background: var(--accent-lt);
+    color: var(--accent);
+    font-weight: 650;
+    padding: 2mm 2.5mm;
+    border-bottom: 1.5px solid var(--accent);
+    font-size: 8.6pt;
+    letter-spacing: .02em;
+  }
+  td {
+    padding: 2mm 2.5mm;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  td code { white-space: normal; }
+
+  /* ---------- TOC ---------- */
+  .toc { page-break-after: always; }
+  .toc ol { list-style: none; padding-left: 0; counter-reset: toc; }
+  .toc li {
+    counter-increment: toc;
+    padding: 1.8mm 0;
+    border-bottom: 1px dotted var(--rule);
+    display: flex;
+    align-items: baseline;
+  }
+  .toc li::before {
+    content: counter(toc);
+    color: var(--accent);
+    font-weight: 650;
+    width: 8mm;
+    flex: 0 0 8mm;
+  }
+  .toc .t { font-weight: 550; }
+  .toc .d { color: var(--muted); font-size: 9pt; margin-left: 2.5mm; }
+
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li {
+    padding-left: 7mm;
+    position: relative;
+    margin-bottom: 2mm;
+  }
+  .checklist li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 1.1mm;
+    width: 3.4mm; height: 3.4mm;
+    border: 1.3px solid var(--accent);
+    border-radius: 2px;
+  }
+
+  .avoid { page-break-inside: avoid; }
+  .newpage { page-break-before: always; }
+  .lead { color: var(--muted); font-size: 10pt; margin-bottom: 5mm; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<section class="cover">
+  <div class="eyebrow">Deployment Runbook</div>
+  <h1>GoCare Training Institute<br>cPanel Deployment Guide</h1>
+  <div class="rule"></div>
+  <p class="sub">Step-by-step procedure for deploying the Laravel&nbsp;12 + Filament&nbsp;4 application from local WAMP to shared cPanel hosting.</p>
+  <dl>
+    <dt>Application</dt><dd>GoCare Training Institute</dd>
+    <dt>Framework</dt><dd>Laravel 12 &middot; Filament 4 admin panel</dd>
+    <dt>PHP requirement</dt><dd>8.2 or newer</dd>
+    <dt>Database</dt><dd>MySQL / MariaDB</dd>
+    <dt>Source path</dt><dd>C:\wamp64\www\Gocare-laravel</dd>
+    <dt>Admin panel</dt><dd>/admin</dd>
+    <dt>Document version</dt><dd>19 August 2026</dd>
+  </dl>
+</section>
+
+<!-- ============ TOC ============ -->
+<section class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><span class="t">Before you start</span><span class="d">Three blocking issues to fix locally</span></li>
+    <li><span class="t">Build front-end assets</span><span class="d">Vite build + production Composer install</span></li>
+    <li><span class="t">Export the database</span><span class="d">mysqldump and phpMyAdmin import</span></li>
+    <li><span class="t">Package the application</span><span class="d">What to include and what to leave behind</span></li>
+    <li><span class="t">Choose a directory layout</span><span class="d">Subdomain vs. primary-domain structure</span></li>
+    <li><span class="t">Set the PHP version and extensions</span><span class="d">MultiPHP Manager and PHP Selector</span></li>
+    <li><span class="t">Create the production .env</span><span class="d">Every value that must change</span></li>
+    <li><span class="t">Run the setup commands</span><span class="d">Migrations, symlink, caches</span></li>
+    <li><span class="t">Set file permissions</span><span class="d">Directory, file and .env modes</span></li>
+    <li><span class="t">Enable SSL and verify</span><span class="d">AutoSSL and the post-deploy checklist</span></li>
+    <li><span class="t">Deploying future updates</span><span class="d">The repeatable update sequence</span></li>
+    <li><span class="t">Troubleshooting</span><span class="d">Common cPanel failure modes</span></li>
+  </ol>
+</section>
+
+<!-- ============ 1 ============ -->
+<h2><span class="num">1</span>Before you start</h2>
+<p class="lead">Three issues in the current local configuration will break the live site or expose credentials. Resolve them before packaging anything.</p>
+
+<div class="box danger">
+  <span class="label">Blocker — M-Pesa callback URL is empty</span>
+  <p><code>MPESA_ENV</code> is set to <code>live</code> but <code>MPESA_CALLBACK_URL</code> has no value. Safaricom requires an absolute, publicly reachable HTTPS URL to POST payment results to. The application already exposes the route <code>POST /mpesa/callback</code>, so the value must become:</p>
+  <pre><code>MPESA_CALLBACK_URL=https://yourdomain.co.ke/mpesa/callback</code></pre>
+  <p>Without it, STK push requests will be rejected or will never confirm, and payments will silently fail to reconcile.</p>
+</div>
+
+<div class="box danger">
+  <span class="label">Blocker — debug mode exposes live credentials</span>
+  <p>The local file has <code>APP_ENV=local</code> and <code>APP_DEBUG=true</code>. In production, any unhandled error renders a stack trace containing environment variables — including your live M-Pesa consumer key, consumer secret and passkey. These must be <code>production</code> and <code>false</code> on the server.</p>
+</div>
+
+<div class="box warn">
+  <span class="label">Caution — stale storage folder</span>
+  <p><code>public/storage</code> currently exists as a real directory on the Windows copy rather than a symlink. If it is uploaded, <code>php artisan storage:link</code> will fail and uploaded media will not display. Exclude it from the archive and create the link on the server instead.</p>
+</div>
+
+<div class="box">
+  <span class="label">Credential hygiene</span>
+  <p>The local <code>.env</code> holds <strong>live</strong> M-Pesa credentials and an Anthropic API key. If that file has ever been shared, emailed, or stored in a cloud-synced folder, rotate those keys in the Daraja portal and the Anthropic console before go-live. <code>.env</code> is correctly listed in <code>.gitignore</code>, so it is not in the repository history.</p>
+</div>
+
+<!-- ============ 2 ============ -->
+<h2><span class="num">2</span>Build front-end assets</h2>
+<p>The compiled Vite bundle in <code>public/build</code> is excluded by <code>.gitignore</code> but is <strong>required</strong> in production — cPanel shared hosting has no Node.js runtime, so the build cannot be run on the server. Build locally and ship the output.</p>
+
+<pre><code>cd /c/wamp64/www/Gocare-laravel
+npm ci
+npm run build
+composer install --no-dev --optimize-autoloader --classmap-authoritative</code></pre>
+
+<p>The <code>--no-dev</code> flag drops PHPUnit, Faker, Pail, Pint, Sail, Mockery and Collision from <code>vendor/</code>, which reduces the upload considerably and removes development tooling from the live server. Confirm that <code>public/build/manifest.json</code> and <code>public/build/assets/</code> exist before continuing.</p>
+
+<!-- ============ 3 ============ -->
+<h2><span class="num">3</span>Export the database</h2>
+<p>Dump the local <code>gocare</code> database:</p>
+<pre><code>mysqldump -u root -p gocare > gocare.sql</code></pre>
+
+<p>Then, in cPanel:</p>
+<ol>
+  <li>Open <strong>MySQL&reg; Databases</strong> and create a new database. cPanel prefixes it with your account name, producing something like <code>cpaneluser_gocare</code>.</li>
+  <li>Create a database user with a strong password. It will likewise be prefixed: <code>cpaneluser_gouser</code>.</li>
+  <li>Under <em>Add User To Database</em>, attach the user and grant <strong>ALL PRIVILEGES</strong>.</li>
+  <li>Open <strong>phpMyAdmin</strong>, select the new database, and use the <strong>Import</strong> tab to upload <code>gocare.sql</code>.</li>
+</ol>
+
+<div class="box warn">
+  <span class="label">If the import exceeds the upload limit</span>
+  <p>phpMyAdmin on shared hosting often caps uploads at 50&nbsp;MB. If the dump is larger, gzip it (<code>gzip gocare.sql</code>) and import the <code>.sql.gz</code> directly — phpMyAdmin decompresses it server-side. Failing that, upload the file via File Manager and import it from the cPanel Terminal with <code>mysql -u USER -p DBNAME &lt; gocare.sql</code>.</p>
+</div>
+
+<!-- ============ 4 ============ -->
+<h2><span class="num">4</span>Package the application</h2>
+<p>The project is roughly 380&nbsp;MB once <code>node_modules</code> is excluded, with <code>public/</code> alone accounting for about 322&nbsp;MB of images. Upload a <strong>single archive</strong> and extract it server-side. Transferring tens of thousands of individual files over FTP will take hours and frequently fails part-way.</p>
+
+<p>From the project root:</p>
+<pre><code>zip -r gocare.zip . \
+  -x "node_modules/*" ".git/*" "tests/*" \
+     "storage/logs/*" \
+     "storage/framework/cache/data/*" \
+     "storage/framework/sessions/*" \
+     "storage/framework/views/*" \
+     "public/storage/*" \
+     ".env" "scratch_*" "*.result.cache" \
+     "check-media-html.php" "render-media-debug.php"</code></pre>
+
+<h3>What is excluded, and why</h3>
+<table>
+  <thead><tr><th style="width:38%">Path</th><th>Reason</th></tr></thead>
+  <tbody>
+    <tr><td><code>node_modules/</code></td><td>54&nbsp;MB of build-time dependencies. The compiled output in <code>public/build</code> is all the server needs.</td></tr>
+    <tr><td><code>.git/</code></td><td>Repository history has no place in a web root.</td></tr>
+    <tr><td><code>tests/</code></td><td>Not executed in production.</td></tr>
+    <tr><td><code>storage/logs</code>, <code>framework/cache</code>, <code>sessions</code>, <code>views</code></td><td>Local runtime artefacts. Laravel regenerates them; stale compiled views cause confusing errors. Keep the <em>directories</em>, discard the contents.</td></tr>
+    <tr><td><code>public/storage/</code></td><td>Must be a symlink created on the server, not a copied folder.</td></tr>
+    <tr><td><code>.env</code></td><td>Contains local database credentials and debug settings. A separate production file is written in step&nbsp;7.</td></tr>
+    <tr><td><code>scratch_*</code>, <code>check-media-html.php</code>, <code>render-media-debug.php</code></td><td>Development scratch files. The two PHP debug scripts sit in the project root and should never be reachable from a live server.</td></tr>
+  </tbody>
+</table>
+
+<p>Upload <code>gocare.zip</code> through <strong>File Manager</strong> and use its <strong>Extract</strong> action.</p>
+
+<!-- ============ 5 ============ -->
+<h2><span class="num">5</span>Choose a directory layout</h2>
+<p>Laravel expects the web server to serve only its <code>public/</code> directory. Everything else — <code>.env</code>, <code>vendor/</code>, <code>storage/</code>, application source — must sit outside the web root. Which of the two layouts below applies depends on whether your host lets you change the document root.</p>
+
+<h3>Option A — subdomain or addon domain (preferred)</h3>
+<p>Use this whenever the document root is editable, which is normally the case for subdomains and addon domains.</p>
+<ol>
+  <li>Extract the archive to <code>/home/USER/gocare-laravel</code> — outside <code>public_html</code>.</li>
+  <li>In <strong>Domains</strong>, set the domain's document root to <code>/home/USER/gocare-laravel/public</code>.</li>
+</ol>
+<p>Nothing else changes. This is the cleanest arrangement: no file moves, no edited paths, and future updates are a straight overwrite.</p>
+
+<h3>Option B — primary domain with a fixed <code>public_html</code></h3>
+<p>Many hosts lock the primary domain's document root to <code>public_html</code>. In that case:</p>
+<ol>
+  <li>Extract the archive to <code>/home/USER/gocare-laravel</code>.</li>
+  <li>Move the <em>contents</em> of <code>gocare-laravel/public/</code> — not the folder itself — into <code>public_html/</code>. This includes the hidden <code>.htaccess</code>; enable <em>Show Hidden Files</em> in File Manager settings first.</li>
+  <li>Edit <code>public_html/index.php</code> so both paths point back at the application root:</li>
+</ol>
+<pre><code>require __DIR__.'/../gocare-laravel/vendor/autoload.php';
+
+$app = require_once __DIR__.'/../gocare-laravel/bootstrap/app.php';</code></pre>
+<p>The application root stays outside the web root, so <code>.env</code> and <code>vendor/</code> remain unreachable from a browser. The shipped <code>public/.htaccess</code> carries the rewrite rules and the Authorization-header handling that Filament's login needs — it must travel with the contents.</p>
+
+<div class="box warn">
+  <span class="label">Option B changes the storage symlink target</span>
+  <p>Under this layout <code>php artisan storage:link</code> creates the link at <code>gocare-laravel/public/storage</code>, which is no longer served by the web server. Step&nbsp;8 gives the corrected command.</p>
+</div>
+
+<!-- ============ 6 ============ -->
+<h2><span class="num">6</span>Set the PHP version and extensions</h2>
+<p>Open <strong>MultiPHP Manager</strong>, select the domain, and set PHP to <strong>8.2</strong> or <strong>8.3</strong>. The application requires <code>^8.2</code>; 8.4 also works where the host offers it. Anything below 8.2 will fail at <code>composer install</code> and at runtime.</p>
+
+<p>Then open <strong>Select PHP Version</strong> (or <em>PHP Extensions</em>) and confirm the following are enabled:</p>
+<table>
+  <thead><tr><th style="width:30%">Extension</th><th>Needed for</th></tr></thead>
+  <tbody>
+    <tr><td><code>pdo_mysql</code></td><td>All database access</td></tr>
+    <tr><td><code>mbstring</code>, <code>tokenizer</code>, <code>ctype</code>, <code>openssl</code></td><td>Laravel framework core</td></tr>
+    <tr><td><code>intl</code></td><td>Filament — the admin panel will not boot without it</td></tr>
+    <tr><td><code>gd</code></td><td>Filament image handling and media uploads</td></tr>
+    <tr><td><code>fileinfo</code></td><td>Upload MIME-type validation</td></tr>
+    <tr><td><code>curl</code></td><td>M-Pesa Daraja API calls</td></tr>
+    <tr><td><code>dom</code>, <code>xml</code>, <code>zip</code>, <code>bcmath</code></td><td>Framework and package dependencies</td></tr>
+  </tbody>
+</table>
+
+<p>While in the PHP settings, raise <code>upload_max_filesize</code> and <code>post_max_size</code> to at least <code>32M</code> if the admin panel is used to upload course images or documents, and set <code>max_execution_time</code> to <code>120</code>.</p>
+
+<!-- ============ 7 ============ -->
+<h2 class="newpage"><span class="num">7</span>Create the production <code>.env</code></h2>
+<p>Create the file directly on the server at the application root using File Manager, with <em>Show Hidden Files</em> enabled. Base it on your local values, changing everything listed below.</p>
+
+<pre><code><span class="c"># --- Application ---</span>
+APP_NAME="GoCare Training Institute"
+APP_ENV=production
+APP_KEY=base64:...              <span class="c"># see note below</span>
+APP_DEBUG=false
+APP_URL=https://yourdomain.co.ke
+LOG_CHANNEL=stack
+LOG_LEVEL=error
+
+<span class="c"># --- Database (cPanel-prefixed names) ---</span>
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=cpaneluser_gocare
+DB_USERNAME=cpaneluser_gouser
+DB_PASSWORD=your-database-password
+
+<span class="c"># --- Drivers ---</span>
+SESSION_DRIVER=file
+SESSION_LIFETIME=120
+CACHE_STORE=file
+QUEUE_CONNECTION=sync
+FILESYSTEM_DISK=local
+BROADCAST_CONNECTION=log
+
+<span class="c"># --- Mail (cPanel email account) ---</span>
+MAIL_MAILER=smtp
+MAIL_HOST=mail.yourdomain.co.ke
+MAIL_PORT=587
+MAIL_USERNAME=noreply@yourdomain.co.ke
+MAIL_PASSWORD=your-mailbox-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS="noreply@yourdomain.co.ke"
+MAIL_FROM_NAME="${APP_NAME}"
+GOCARE_NOTIFICATION_EMAIL=admissions@yourdomain.co.ke
+
+<span class="c"># --- M-Pesa Daraja (live) ---</span>
+MPESA_ENV=live
+MPESA_CONSUMER_KEY=...
+MPESA_CONSUMER_SECRET=...
+MPESA_PASSKEY=...
+MPESA_TYPE=till
+MPESA_SHORTCODE=9373479
+MPESA_TILL_NUMBER=7425170
+MPESA_CALLBACK_URL=https://yourdomain.co.ke/mpesa/callback</code></pre>
+
+<h3>Notes on specific values</h3>
+<ul>
+  <li><strong><code>APP_KEY</code></strong> — reuse the existing local key if the imported database contains encrypted columns or existing user sessions. Generating a new one makes previously encrypted values unreadable. If nothing is encrypted, <code>php artisan key:generate</code> on the server is fine.</li>
+  <li><strong><code>QUEUE_CONNECTION</code></strong> — set to <code>sync</code>. Nothing in the application implements <code>ShouldQueue</code> and there are no job classes, so a queue worker would idle for no benefit. Shared hosting rarely permits long-running workers in any case. If queued work is added later, switch to <code>database</code> and add a cron job running <code>queue:work --stop-when-empty</code>.</li>
+  <li><strong><code>ANTHROPIC_API_KEY</code></strong> — omit it unless the site calls the Claude API at runtime. It appears in the local file but should not be shipped by default.</li>
+  <li><strong>Redis and AWS blocks</strong> — remove them. Shared cPanel has no Redis, and the S3 credentials are unset.</li>
+  <li><strong>No scheduler cron is required.</strong> <code>routes/console.php</code> defines only the stock <code>inspire</code> command, so <code>schedule:run</code> has nothing to do.</li>
+</ul>
+
+<!-- ============ 8 ============ -->
+<h2><span class="num">8</span>Run the setup commands</h2>
+<p>Use <strong>cPanel &rarr; Terminal</strong>, or SSH if it is enabled. From the application root:</p>
+
+<pre><code>cd ~/gocare-laravel
+
+<span class="c"># Remove the Windows folder if it slipped into the archive</span>
+rm -rf public/storage
+
+php artisan storage:link
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan filament:optimize</code></pre>
+
+<p><code>--force</code> is required because <code>APP_ENV</code> is <code>production</code>; without it, Artisan refuses to run migrations non-interactively.</p>
+
+<div class="box warn">
+  <span class="label">Option B — corrected storage symlink</span>
+  <p>If you used the primary-domain layout, the link created above points somewhere the web server does not serve. Replace it:</p>
+  <pre><code>rm -f ~/gocare-laravel/public/storage
+ln -s ~/gocare-laravel/storage/app/public ~/public_html/storage</code></pre>
+</div>
+
+<div class="box">
+  <span class="label">No Terminal access?</span>
+  <p>Some shared plans hide the Terminal. Use <strong>Cron Jobs</strong> as a one-shot runner: schedule the command a minute or two ahead, let it fire once, then delete the entry.</p>
+  <pre><code>cd ~/gocare-laravel && /usr/local/bin/php artisan migrate --force</code></pre>
+  <p>Check <strong>Select PHP Version</strong> for the exact CLI binary path — on many hosts it is <code>/opt/cpanel/ea-php82/root/usr/bin/php</code> rather than <code>/usr/local/bin/php</code>. Using the wrong binary silently runs an unsupported PHP version.</p>
+</div>
+
+<div class="box warn">
+  <span class="label">After caching configuration</span>
+  <p>Once <code>config:cache</code> has run, edits to <code>.env</code> have <strong>no effect</strong> until you re-run it. Any time you change an environment value on the server, run <code>php artisan config:clear &amp;&amp; php artisan config:cache</code>.</p>
+</div>
+
+<!-- ============ 9 ============ -->
+<h2><span class="num">9</span>Set file permissions</h2>
+<pre><code>find ~/gocare-laravel -type d -exec chmod 755 {} \;
+find ~/gocare-laravel -type f -exec chmod 644 {} \;
+chmod -R 775 ~/gocare-laravel/storage
+chmod -R 775 ~/gocare-laravel/bootstrap/cache
+chmod 600 ~/gocare-laravel/.env</code></pre>
+
+<p>Laravel writes logs, compiled views, sessions and cache files into <code>storage/</code> and <code>bootstrap/cache/</code>, which is why those two need group write. <code>.env</code> is restricted to the owner. Never set <code>777</code> on anything — many hosts refuse to execute PHP in world-writable directories, and it is an unnecessary exposure on a shared server.</p>
+
+<!-- ============ 10 ============ -->
+<h2><span class="num">10</span>Enable SSL and verify</h2>
+<p>Open <strong>SSL/TLS Status</strong> and run <strong>AutoSSL</strong> for the domain. This is not optional: Safaricom will not POST payment callbacks to a plain-HTTP endpoint, so M-Pesa cannot function without a valid certificate.</p>
+
+<h3>Post-deployment checklist</h3>
+<ul class="checklist">
+  <li><strong>Homepage loads with full styling</strong> at <code>https://yourdomain.co.ke</code>. Unstyled output means <code>public/build</code> was not uploaded — return to step&nbsp;2.</li>
+  <li><strong>Admin panel reachable</strong> at <code>https://yourdomain.co.ke/admin</code> and login succeeds. A 500 here usually means the <code>intl</code> extension is missing.</li>
+  <li><strong>Media uploads display.</strong> Upload an image through the admin panel and confirm it renders on the public site — this exercises the <code>storage</code> symlink.</li>
+  <li><strong>Application form submits</strong> and writes a record, confirming database access and mail delivery.</li>
+  <li><strong>Notification email arrives</strong> at the address in <code>GOCARE_NOTIFICATION_EMAIL</code>.</li>
+  <li><strong>A test M-Pesa payment completes</strong> and the callback updates the application record. Watch <code>storage/logs/laravel.log</code> during the attempt.</li>
+  <li><strong><code>https://yourdomain.co.ke/.env</code> returns 403 or 404.</strong> If it returns the file contents, the layout is wrong — stop immediately, move the application root out of <code>public_html</code>, and rotate every credential in that file.</li>
+  <li><strong>An invalid URL shows a plain 404</strong>, not a Laravel stack trace. A trace means <code>APP_DEBUG</code> is still <code>true</code>.</li>
+</ul>
+
+<!-- ============ 11 ============ -->
+<h2><span class="num">11</span>Deploying future updates</h2>
+<p>Once the site is live, use this sequence for every change. Build assets locally first — the server still cannot run Vite.</p>
+
+<pre><code>php artisan down                 <span class="c"># maintenance mode</span>
+
+<span class="c"># upload changed files, including a freshly built public/build</span>
+
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan optimize:clear
+php artisan optimize
+php artisan filament:optimize
+
+php artisan up</code></pre>
+
+<p><code>optimize:clear</code> followed by <code>optimize</code> rebuilds the config, route and view caches in one pass. Skipping the clear step is the most common cause of "my change did not appear" after an update.</p>
+
+<!-- ============ 12 ============ -->
+<h2><span class="num">12</span>Troubleshooting</h2>
+<table>
+  <thead><tr><th style="width:32%">Symptom</th><th>Cause and fix</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Blank white page or HTTP 500</td>
+      <td>Read <code>storage/logs/laravel.log</code> and the cPanel <strong>Errors</strong> page. Most often a permissions problem on <code>storage/</code> or <code>bootstrap/cache/</code>, or a missing PHP extension.</td>
+    </tr>
+    <tr>
+      <td>Page loads but has no CSS or JavaScript</td>
+      <td><code>public/build</code> is missing or stale. Run <code>npm run build</code> locally and re-upload the whole <code>build</code> directory, including <code>manifest.json</code>.</td>
+    </tr>
+    <tr>
+      <td>Uploaded images return 404</td>
+      <td>The <code>storage</code> symlink is missing or points outside the document root. Recreate it per step&nbsp;8, using the Option&nbsp;B command if the app sits beside <code>public_html</code>.</td>
+    </tr>
+    <tr>
+      <td>Every URL except the homepage returns 404</td>
+      <td><code>.htaccess</code> was not uploaded — File Manager hides dotfiles by default. Enable <em>Show Hidden Files</em> and confirm it sits next to <code>index.php</code> in the document root.</td>
+    </tr>
+    <tr>
+      <td>Filament login redirects back to itself</td>
+      <td>Session directory not writable, or <code>APP_URL</code> does not match the actual scheme and host. Set it to the exact <code>https://</code> address and re-run <code>config:cache</code>.</td>
+    </tr>
+    <tr>
+      <td><code>SQLSTATE[HY000] [1045] Access denied</code></td>
+      <td>The database user was not added to the database, or the cPanel prefix is missing from <code>DB_DATABASE</code> / <code>DB_USERNAME</code>. Re-check in MySQL&reg; Databases.</td>
+    </tr>
+    <tr>
+      <td>Environment change has no effect</td>
+      <td>Configuration is cached. Run <code>php artisan config:clear &amp;&amp; php artisan config:cache</code>.</td>
+    </tr>
+    <tr>
+      <td>M-Pesa STK push sent but never confirms</td>
+      <td><code>MPESA_CALLBACK_URL</code> is empty, uses HTTP, or points at a host without a valid certificate. It must be the absolute HTTPS URL of <code>/mpesa/callback</code>, and the certificate must be trusted.</td>
+    </tr>
+    <tr>
+      <td><code>Class not found</code> after an update</td>
+      <td>Stale autoloader. Run <code>composer dump-autoload --optimize</code>.</td>
+    </tr>
+    <tr>
+      <td>File Manager extraction times out</td>
+      <td>The archive is too large for one pass. Split it — upload the application without <code>public/images</code>, extract, then upload the images as a second archive.</td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>
