@@ -237,3 +237,42 @@ sign its callbacks. A result is only accepted when its `OriginatorConversationID
 matches one this site generated, which is the same bar the STK callback sets with
 `CheckoutRequestID`. If you want a stronger guarantee, put an unguessable segment in
 `MPESA_STATUS_RESULT_URL` and match the route accordingly.
+
+## 10. Idempotency
+
+Payments are retried by everyone: applicants tap "try again", and Safaricom re-delivers
+a callback it believes was not acknowledged. Neither may double-charge, double-record
+or double-notify — while the STK prompt itself stays deliberately re-sendable.
+
+| Repeated action | Guarantee |
+| --- | --- |
+| `POST /applications` again | Reuses the session's application. One applicant, one row. |
+| `POST /applications` again | Still sends a fresh STK prompt — retrying is the point. |
+| `POST /applications` when already `paid` | Returns the paid state. No second prompt, no second row. |
+| `POST /mpesa/callback` re-delivered | Transitions to `paid` once; one notification email. |
+| Late *failed* callback after `paid` | Ignored; never unpays. |
+| `POST /applications/paid` with the same code | No second Transaction Status query while one is in flight. |
+| `POST /applications/paid` with a corrected code | Queried — fixing a typo must still work. |
+| `POST /mpesa/status/result` re-delivered | Transitions to `paid` once; one notification email. |
+| Status result and STK callback both arrive | Whichever lands first wins; one email total. |
+
+How it is enforced:
+
+- **One row per applicant.** `store()` reuses the application the session owns instead
+  of creating another. A second row would be orphaned: a late callback for the first
+  attempt would settle it while the browser polls the newer reference, so the applicant
+  pays and never sees confirmation.
+- **Every attempt's CheckoutRequestID is kept** in `checkout_request_ids`, and the
+  callback matches the latest *or* any earlier one. An applicant who pays the first
+  prompt after asking for a second is still credited.
+- **The transition to `paid` is claimed atomically** in both callbacks with a
+  conditional `where('payment_status', '!=', 'paid')->update(...)`. Only the writer that
+  actually changed a row sends the email, so a re-delivery or a race between the STK
+  callback and a status result cannot notify twice.
+- **A query in flight is not repeated.** `status_queried_at` plus the stored
+  conversation id suppress a duplicate query for the same code for two minutes, matching
+  how long the browser polls. After that a retry is allowed, so a result Safaricom never
+  delivered is recoverable.
+- **A retry never downgrades a stronger state.** `store()` resets only `pending` or
+  `failed` rows to `pending`; a code already `awaiting_verification` is left alone, and a
+  `paid` row is never touched.

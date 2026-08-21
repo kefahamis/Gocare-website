@@ -12,8 +12,10 @@ class Application extends Model
         'phone',
         'amount',
         'checkout_request_id',
+        'checkout_request_ids',
         'mpesa_receipt',
         'status_conversation_id',
+        'status_queried_at',
         'payment_status',
         'payment_note',
         'data',
@@ -24,7 +26,9 @@ class Application extends Model
     {
         return [
             'data' => 'array',
+            'checkout_request_ids' => 'array',
             'submitted_at' => 'datetime',
+            'status_queried_at' => 'datetime',
         ];
     }
 }

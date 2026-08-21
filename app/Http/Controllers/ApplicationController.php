@@ -30,27 +30,67 @@ class ApplicationController extends Controller
             return $this->unconfiguredFeeResponse();
         }
 
-        $reference = $this->newReference();
+        $application = $this->currentApplication($request);
 
-        $application = Application::create([
-            'reference' => $reference,
-            'status' => 'submitted',
-            'phone' => $request->input('phone'),
-            'amount' => $amount,
-            'payment_status' => 'pending',
-            'data' => $request->except(['_token', 'amount']),
-            'submitted_at' => now(),
-        ]);
+        // Paying twice is never the intent: a double click after a confirmed
+        // payment must not push again or open a second application.
+        if ($application && $application->payment_status === 'paid') {
+            return response()->json([
+                'message' => 'This application is already paid.',
+                'reference' => $application->reference,
+                'checkout_request_id' => $application->checkout_request_id,
+                'payment_status' => $application->payment_status,
+            ]);
+        }
 
-        // Remember which application this browser owns, so the later details
-        // submission attaches to it instead of trusting a client-supplied ref.
-        $request->session()->put('application_reference', $reference);
+        if ($application) {
+            // The prompt is deliberately re-sendable ("tap to try again"), but it
+            // reuses this row rather than opening another. A second row would be
+            // orphaned: a late callback for the first attempt would settle it
+            // while the browser polls the newer reference and never sees payment.
+            $application->update([
+                'phone' => $request->input('phone'),
+                'amount' => $amount,
+                'data' => $request->except(['_token', 'amount']),
+                // A hand-typed code already awaiting verification outranks a
+                // fresh attempt, so only a pending or failed row is reset.
+                'payment_status' => in_array($application->payment_status, ['pending', 'failed'], true)
+                    ? 'pending'
+                    : $application->payment_status,
+                'payment_note' => null,
+            ]);
+        } else {
+            $reference = $this->newReference();
+
+            $application = Application::create([
+                'reference' => $reference,
+                'status' => 'submitted',
+                'phone' => $request->input('phone'),
+                'amount' => $amount,
+                'payment_status' => 'pending',
+                'data' => $request->except(['_token', 'amount']),
+                'submitted_at' => now(),
+            ]);
+
+            // Remember which application this browser owns, so the later details
+            // submission attaches to it instead of trusting a client-supplied ref.
+            $request->session()->put('application_reference', $reference);
+        }
 
         try {
             $result = $mpesa->stkPush($application->phone, $application->amount, $application->reference, 'Application Fee');
 
             if (isset($result['CheckoutRequestID'])) {
-                $application->update(['checkout_request_id' => $result['CheckoutRequestID']]);
+                // Keep every attempt's id, not just the latest: an applicant who
+                // pays an earlier prompt after asking for a new one must still
+                // have that callback land on this application.
+                $ids = $application->checkout_request_ids ?? [];
+                $ids[] = $result['CheckoutRequestID'];
+
+                $application->update([
+                    'checkout_request_id' => $result['CheckoutRequestID'],
+                    'checkout_request_ids' => array_values(array_unique($ids)),
+                ]);
             }
 
             return response()->json([
@@ -185,6 +225,23 @@ class ApplicationController extends Controller
             ], 422);
         }
 
+        // Re-submitting the same code while its query is still in flight must
+        // not start another one: Safaricom would answer on a new conversation
+        // id and the earlier result would arrive orphaned.
+        $inFlight = $application->payment_status === 'awaiting_verification'
+            && $application->mpesa_receipt === $code
+            && filled($application->status_conversation_id)
+            && $application->status_queried_at?->gt(now()->subMinutes(2));
+
+        if ($inFlight) {
+            return response()->json([
+                'message' => 'Checking this code with M-Pesa. This usually takes a few seconds.',
+                'reference' => $application->reference,
+                'payment_status' => $application->payment_status,
+                'verifying' => true,
+            ]);
+        }
+
         $application->update([
             'payment_status' => 'awaiting_verification',
             'mpesa_receipt' => $code,
@@ -210,6 +267,7 @@ class ApplicationController extends Controller
 
             $application->update([
                 'status_conversation_id' => $result['OriginatorConversationID'] ?? null,
+                'status_queried_at' => now(),
             ]);
 
             return response()->json([
@@ -333,7 +391,11 @@ class ApplicationController extends Controller
         $checkoutRequestId = $callback['CheckoutRequestID'];
         $resultCode = $callback['ResultCode'];
 
-        $application = Application::where('checkout_request_id', $checkoutRequestId)->first();
+        // Match the latest attempt or any earlier one, so a callback for a
+        // prompt the applicant paid after retrying is not dropped.
+        $application = Application::where('checkout_request_id', $checkoutRequestId)
+            ->orWhereJsonContains('checkout_request_ids', $checkoutRequestId)
+            ->first();
 
         if (!$application) {
             Log::warning("No application found for CheckoutRequestID: {$checkoutRequestId}");
@@ -352,13 +414,28 @@ class ApplicationController extends Controller
                 }
             }
 
-            $application->update([
-                'payment_status' => 'paid',
-                'mpesa_receipt' => $receipt
-            ]);
+            // Safaricom retries a callback it thinks was not acknowledged, so
+            // claim the transition atomically: whoever flips it away from paid
+            // owns sending the email, and a repeat delivery is a no-op.
+            $claimed = Application::where('id', $application->id)
+                ->where('payment_status', '!=', 'paid')
+                ->update([
+                    'payment_status' => 'paid',
+                    'payment_note' => null,
+                    'mpesa_receipt' => $receipt,
+                ]);
+
+            if ($claimed === 0) {
+                Log::info('Duplicate M-Pesa callback ignored', [
+                    'reference' => $application->reference,
+                    'checkout_request_id' => $checkoutRequestId,
+                ]);
+
+                return response()->json(['message' => 'Success']);
+            }
 
             // Send email only when paid
-            Mail::to(config('gocare.notification_email'))->send(new ApplicationReceived($application));
+            Mail::to(config('gocare.notification_email'))->send(new ApplicationReceived($application->refresh()));
 
         } elseif (in_array($application->payment_status, ['paid', 'awaiting_verification'], true)) {
             // A late failure callback for an abandoned STK attempt must not
@@ -429,14 +506,26 @@ class ApplicationController extends Controller
             return response()->json(['ResultCode' => 0, 'ResultDesc' => 'Accepted']);
         }
 
-        $application->update([
-            'payment_status' => 'paid',
-            'payment_note' => null,
-            'mpesa_receipt' => $parameters['ReceiptNo'] ?? $application->mpesa_receipt,
-        ]);
+        // Claim the transition atomically, as in mpesaCallback: a retried result
+        // or a racing STK callback must not send the email a second time.
+        $claimed = Application::where('id', $application->id)
+            ->where('payment_status', '!=', 'paid')
+            ->update([
+                'payment_status' => 'paid',
+                'payment_note' => null,
+                'mpesa_receipt' => $parameters['ReceiptNo'] ?? $application->mpesa_receipt,
+            ]);
+
+        if ($claimed === 0) {
+            Log::info('Duplicate M-Pesa transaction status result ignored', [
+                'reference' => $application->reference,
+            ]);
+
+            return response()->json(['ResultCode' => 0, 'ResultDesc' => 'Accepted']);
+        }
 
         // Matches the STK path: the notification email goes out once paid.
-        Mail::to(config('gocare.notification_email'))->send(new ApplicationReceived($application));
+        Mail::to(config('gocare.notification_email'))->send(new ApplicationReceived($application->refresh()));
 
         return response()->json(['ResultCode' => 0, 'ResultDesc' => 'Accepted']);
     }
