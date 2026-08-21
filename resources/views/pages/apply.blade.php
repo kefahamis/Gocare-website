@@ -6,6 +6,7 @@
   <link rel="icon" type="image/png" href="images/gocare-institute-logo.png">
   <link rel="apple-touch-icon" href="images/gocare-institute-logo.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>Online Application &middot; GoCare Training Institute</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -114,6 +115,33 @@
     .payment-info-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 16px; margin-bottom: 20px; }
     .payment-info-box h4 { display: flex; align-items: center; gap: 8px; color: var(--o); margin-bottom: 8px; font-size: 0.95rem; }
     .payment-info-box p { font-size: 0.85rem; color: #475569; line-height: 1.6; }
+
+    /* manual (paybill) payment */
+    .pay-switch { display: flex; justify-content: center; margin-bottom: 20px; }
+    .pay-switch button { background: none; border: none; color: var(--p); font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 2px solid transparent; }
+    .pay-switch button:hover { color: var(--o); border-bottom-color: var(--o); }
+    .pay-switch button i { width: 16px; height: 16px; }
+    .manual-pay-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+    .manual-pay-box h4 { display: flex; align-items: center; gap: 8px; color: var(--dark); margin-bottom: 12px; font-size: 0.98rem; }
+    .manual-steps { list-style: none; padding: 0; margin: 0 0 18px; counter-reset: paystep; }
+    .manual-steps li { position: relative; padding: 7px 0 7px 34px; font-size: 0.88rem; color: #475569; line-height: 1.6; counter-increment: paystep; }
+    .manual-steps li::before { content: counter(paystep); position: absolute; left: 0; top: 7px; width: 22px; height: 22px; border-radius: 50%; background: var(--dark); color: #fff; font-size: 0.72rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .manual-steps strong { color: var(--dark); }
+    .manual-verify { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+    .manual-verify > div { flex: 1; min-width: 200px; }
+    .manual-verify label { font-size: 0.85rem; font-weight: 600; color: #475569; display: block; margin-bottom: 6px; }
+    .manual-verify input { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 1rem; font-family: inherit; letter-spacing: 1px; text-transform: uppercase; outline: none; transition: 0.3s; }
+    .manual-verify input:focus { border-color: var(--o); box-shadow: 0 0 0 4px rgba(236,116,36,0.1); }
+    .btn-verify { background: linear-gradient(135deg, var(--dark), var(--p)); color: #fff; border: none; padding: 14px 24px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; font-family: inherit; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
+    .btn-verify:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(74,26,109,0.3); }
+    .btn-verify:disabled { opacity: 0.65; cursor: not-allowed; }
+    .verify-status { margin-top: 14px; font-size: 0.88rem; font-weight: 600; line-height: 1.6; display: none; align-items: flex-start; gap: 8px; padding: 12px 14px; border-radius: 10px; }
+    .verify-status i { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+    .verify-status.is-pending { display: flex; background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+    .verify-status.is-confirmed { display: flex; background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+    .verify-status.is-failed { display: flex; background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+    .verify-spin { animation: verifySpin 1s linear infinite; }
+    @keyframes verifySpin { to { transform: rotate(360deg); } }
 
     /* review */
     .review-section { margin-bottom: 24px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
@@ -732,6 +760,43 @@
                 </div>
                 <div id="mpesaStatus" style="margin-top:12px;display:none;"></div>
               </div>
+
+              <!-- Switch between STK push and paying manually on the Paybill -->
+              <div class="pay-switch">
+                <button type="button" id="payModeToggle" onclick="togglePayMode()">
+                  <i data-lucide="hand-coins"></i> <span id="payModeLabel">Pay manually instead</span>
+                </button>
+              </div>
+
+              <!-- Manual Paybill payment + M-Pesa confirmation code verification -->
+              @php($manualPay = config('application_payments.manual'))
+              <div class="manual-pay-box" id="manualPayInfo" style="display:none;">
+                <h4><i data-lucide="hand-coins"></i> Pay manually on M-Pesa {{ $manualPay['type'] === 'till' ? 'Buy Goods' : 'Paybill' }}</h4>
+                <ol class="manual-steps">
+                  @if ($manualPay['type'] === 'till')
+                    <li>Open <strong>M-Pesa</strong> on your phone and select <strong>Lipa Na M-Pesa</strong>, then <strong>Buy Goods and Services</strong>.</li>
+                    <li>Enter Till Number <strong>{{ $manualPay['till'] }}</strong>.</li>
+                  @else
+                    <li>Open <strong>M-Pesa</strong> on your phone and select <strong>Lipa Na M-Pesa</strong>, then <strong>Pay Bill</strong>.</li>
+                    <li>Enter Business Number <strong>{{ $manualPay['paybill'] }}</strong>.</li>
+                    <li>Enter Account Number <strong>{{ $manualPay['account_hint'] }}</strong>.</li>
+                  @endif
+                  <li>Enter the amount <strong>KES {{ number_format(config('application_payments.fee')) }}</strong> and your M-Pesa PIN, then confirm.</li>
+                  <li>Type the <strong>confirmation code</strong> from the M-Pesa SMS below and click <strong>Verify Code</strong>.</li>
+                </ol>
+
+                <div class="manual-verify">
+                  <div>
+                    <label for="f_mpesa_code">M-Pesa Confirmation Code</label>
+                    <input type="text" id="f_mpesa_code" placeholder="e.g. SHK3XY8ZT9" maxlength="10" autocomplete="off" spellcheck="false">
+                  </div>
+                  <button type="button" class="btn-verify" id="verifyCodeBtn" onclick="verifyMpesaCode()">
+                    <i data-lucide="shield-check"></i> Verify Code
+                  </button>
+                </div>
+                <div class="verify-status" id="verifyStatus"></div>
+              </div>
+
               <div class="form-row">
                 <div class="form-group"><label>Transaction Code (if paid)</label><input type="text" id="f_txn" placeholder="e.g. SHK3XY8ZT9"></div>
                 <div class="form-group"><label>Payment Date</label><input type="date" id="f_paydate"></div>
@@ -878,6 +943,7 @@
                 <div class="review-header"><h3><i data-lucide="file-text"></i> Payment</h3><button type="button" data-goto="5">Edit</button></div>
                 <div class="review-body">
                   <div class="review-row"><span class="review-label">Payment Method</span><span class="review-value" id="rv_payment">&mdash;</span></div>
+                  <div class="review-row"><span class="review-label">Transaction Code</span><span class="review-value" id="rv_txn">&mdash;</span></div>
                 </div>
               </div>
 
@@ -1152,7 +1218,10 @@
       setRv('rv_intake', val('f_intake'));
       setRv('rv_mode', radioVal('mode'));
       var pay = document.querySelector('.pay-card.selected h4');
-      setRv('rv_payment', pay ? pay.textContent : '');
+      var method = pay ? pay.textContent : '';
+      setRv('rv_payment', method ? method + (payMode === 'manual' ? ' · Paybill (manual)' : ' · STK Push') : '');
+      var txn = val('f_txn');
+      setRv('rv_txn', txn ? txn + (mpesaVerify.status === 'confirmed' ? ' · Verified' : ' · Awaiting confirmation') : '');
       var acc = radioVal('accommodation') || 'No';
       setRv('rv_acc', acc);
       var roomRow = document.getElementById('rv_room_row');
@@ -1208,6 +1277,134 @@
         if (window.lucide) lucide.createIcons();
         status.innerHTML = '<span style="color:#2e7d32;font-weight:600;">&#10003; Prompt sent! If you did not receive it, tap the button again.</span>';
       }, 3000);
+    }
+
+    /* ---- Manual Paybill payment + M-Pesa confirmation code verification ---- */
+    var payMode = 'stk';
+    var mpesaVerify = { token: null, status: null, timer: null, attempts: 0 };
+    var MPESA_POLL_INTERVAL = 3000;
+    var MPESA_POLL_ATTEMPTS = 40; /* ~2 minutes, matching the server-side wait */
+
+    function togglePayMode() {
+      payMode = payMode === 'stk' ? 'manual' : 'stk';
+      var manual = payMode === 'manual';
+      document.getElementById('mpesaInfo').style.display = manual ? 'none' : 'block';
+      document.getElementById('manualPayInfo').style.display = manual ? 'block' : 'none';
+      document.getElementById('payModeLabel').textContent = manual ? 'Use M-Pesa STK Push instead' : 'Pay manually instead';
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function setVerifyStatus(state, icon, message) {
+      var box = document.getElementById('verifyStatus');
+      box.className = 'verify-status is-' + state;
+      box.innerHTML = '<i data-lucide="' + icon + '"' + (state === 'pending' ? ' class="verify-spin"' : '') + '></i><span>' + message + '</span>';
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function setVerifyBusy(busy) {
+      var btn = document.getElementById('verifyCodeBtn');
+      btn.disabled = busy;
+      btn.innerHTML = busy
+        ? '<i data-lucide="loader-circle" class="verify-spin"></i> Verifying&hellip;'
+        : '<i data-lucide="shield-check"></i> Verify Code';
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function stopMpesaPolling() {
+      if (mpesaVerify.timer) { clearTimeout(mpesaVerify.timer); mpesaVerify.timer = null; }
+    }
+
+    function verifyMpesaCode() {
+      var input = document.getElementById('f_mpesa_code');
+      var code = (input.value || '').trim().toUpperCase().replace(/\s/g, '');
+      input.value = code;
+
+      if (!/^[A-Z0-9]{10}$/.test(code)) {
+        setVerifyStatus('failed', 'triangle-alert', 'An M-Pesa confirmation code is 10 letters and numbers, e.g. SHK3XY8ZT9.');
+        return;
+      }
+
+      stopMpesaPolling();
+      mpesaVerify = { token: null, status: 'pending', timer: null, attempts: 0 };
+      setVerifyBusy(true);
+      setVerifyStatus('pending', 'loader-circle', 'Checking ' + code + ' with M-Pesa&hellip;');
+
+      var phone = (document.getElementById('f_mpesa_phone').value || '').trim().replace(/\s/g, '');
+
+      fetch('{{ route('mpesa.verification.query') }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ code: code, phone: /^[0-9]{9}$/.test(phone) ? '254' + phone : null })
+      })
+        .then(function (response) { return response.json().then(function (body) { return { ok: response.ok, body: body }; }); })
+        .then(function (result) {
+          if (!result.ok) {
+            applyVerifyResult({ status: 'failed', message: verifyErrorMessage(result.body) });
+            return;
+          }
+          mpesaVerify.token = result.body.token;
+          applyVerifyResult(result.body);
+        })
+        .catch(function () {
+          applyVerifyResult({ status: 'failed', message: 'We could not reach the verification service. Please check your connection and try again.' });
+        });
+    }
+
+    function verifyErrorMessage(body) {
+      if (body && body.message) return body.message;
+      if (body && body.errors) {
+        var first = Object.keys(body.errors)[0];
+        if (first) return body.errors[first][0];
+      }
+      return 'We could not confirm this code. Please check it and try again.';
+    }
+
+    function pollMpesaVerification() {
+      if (!mpesaVerify.token) return;
+
+      if (mpesaVerify.attempts >= MPESA_POLL_ATTEMPTS) {
+        applyVerifyResult({ status: 'timed_out', message: 'M-Pesa has not responded yet. Please try again, or send us the code and we will confirm it manually.' });
+        return;
+      }
+
+      mpesaVerify.attempts += 1;
+      mpesaVerify.timer = setTimeout(function () {
+        fetch('{{ url('/mpesa/verification/status') }}/' + mpesaVerify.token, { headers: { 'Accept': 'application/json' } })
+          .then(function (response) { return response.json(); })
+          .then(applyVerifyResult)
+          .catch(function () { pollMpesaVerification(); });
+      }, MPESA_POLL_INTERVAL);
+    }
+
+    function applyVerifyResult(result) {
+      mpesaVerify.status = result.status;
+
+      if (result.status === 'pending') {
+        pollMpesaVerification();
+        return;
+      }
+
+      stopMpesaPolling();
+      setVerifyBusy(false);
+
+      if (result.status !== 'confirmed') {
+        setVerifyStatus('failed', 'circle-x', result.message || 'We could not confirm this code.');
+        return;
+      }
+
+      /* Confirmed by Safaricom: carry the details into the payment fields. */
+      document.getElementById('f_txn').value = result.code || '';
+      if (result.paid_at) document.getElementById('f_paydate').value = result.paid_at;
+      else if (!document.getElementById('f_paydate').value) {
+        document.getElementById('f_paydate').value = new Date().toISOString().slice(0, 10);
+      }
+
+      var amount = result.amount ? ' of KES ' + Number(result.amount).toLocaleString() : '';
+      setVerifyStatus('confirmed', 'badge-check', 'Payment' + amount + ' confirmed by M-Pesa. Code ' + (result.code || '') + ' has been recorded.');
     }
 
     function submitApplication() {
