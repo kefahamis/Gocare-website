@@ -276,3 +276,26 @@ How it is enforced:
 - **A retry never downgrades a stronger state.** `store()` resets only `pending` or
   `failed` rows to `pending`; a code already `awaiting_verification` is left alone, and a
   `paid` row is never touched.
+
+### Applying the schema
+
+The idempotent paths need four columns on `applications`, added by
+`2026_08_21_000001_add_mpesa_status_fields_to_applications_table` and
+`2026_08_21_000002_add_mpesa_retry_fields_to_applications_table`:
+
+```bash
+php artisan migrate
+php artisan config:clear
+```
+
+Deploying the code without migrating produces
+`Unknown column 'checkout_request_ids'` on the STK push. The push itself still
+reaches the applicant's phone - only the write that records its CheckoutRequestID
+fails - so the response deliberately still reports the prompt as sent and logs the
+id at `critical` level for reconciliation. Search the log for
+"CheckoutRequestID could not be stored" to find any payment taken in that window.
+
+The second migration guards every column with `Schema::hasColumn`, so it is safe on a
+database that already picked those columns up from an earlier revision of the first
+migration.
+

@@ -7,6 +7,7 @@ use App\Models\Application;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
@@ -202,6 +203,28 @@ class MpesaIdempotencyTest extends TestCase
         $this->assertSame('paid', $application->payment_status);
         $this->assertSame(['ws_CO_1', 'ws_CO_2'], $application->checkout_request_ids);
         Mail::assertSent(ApplicationReceived::class, 1);
+    }
+
+    public function test_a_sent_prompt_is_not_reported_as_failed_when_it_cannot_be_stored(): void
+    {
+        $this->fakeDaraja();
+
+        // Reproduces a schema that is behind the code: the write after the push
+        // fails, but the prompt is already on the applicant's phone.
+        Schema::table('applications', function ($table) {
+            $table->dropColumn('checkout_request_ids');
+        });
+
+        $this->postJson('/applications', ['phone' => '254712345678'])
+            ->assertOk()
+            ->assertJson([
+                'message' => 'Payment initiated. Please enter your M-Pesa PIN.',
+                'checkout_request_id' => 'ws_CO_1',
+            ]);
+
+        // Telling the applicant it failed would only push them into asking for
+        // a second prompt for a payment that is already in flight.
+        $this->assertSame(1, Application::count());
     }
 
     public function test_a_repeated_stk_callback_notifies_only_once(): void

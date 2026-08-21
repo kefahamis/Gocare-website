@@ -79,25 +79,6 @@ class ApplicationController extends Controller
 
         try {
             $result = $mpesa->stkPush($application->phone, $application->amount, $application->reference, 'Application Fee');
-
-            if (isset($result['CheckoutRequestID'])) {
-                // Keep every attempt's id, not just the latest: an applicant who
-                // pays an earlier prompt after asking for a new one must still
-                // have that callback land on this application.
-                $ids = $application->checkout_request_ids ?? [];
-                $ids[] = $result['CheckoutRequestID'];
-
-                $application->update([
-                    'checkout_request_id' => $result['CheckoutRequestID'],
-                    'checkout_request_ids' => array_values(array_unique($ids)),
-                ]);
-            }
-
-            return response()->json([
-                'message' => 'Payment initiated. Please enter your M-Pesa PIN.',
-                'reference' => $application->reference,
-                'checkout_request_id' => $result['CheckoutRequestID'] ?? null
-            ]);
         } catch (\Exception $e) {
             Log::error('Application Mpesa initiation failed: ' . $e->getMessage(), [
                 'reference' => $application->reference,
@@ -122,6 +103,42 @@ class ApplicationController extends Controller
 
             return response()->json($payload, 500);
         }
+
+        $checkoutRequestId = $result['CheckoutRequestID'] ?? null;
+
+        // Past this point the prompt is on the applicant's phone. Storing the id
+        // is what lets the callback find this row, but if that write fails the
+        // prompt is still real - reporting it as a failure would only push the
+        // applicant into requesting a second one.
+        if ($checkoutRequestId) {
+            try {
+                // Keep every attempt's id, not just the latest: an applicant who
+                // pays an earlier prompt after asking for a new one must still
+                // have that callback land on this application.
+                $ids = $application->checkout_request_ids ?? [];
+                $ids[] = $checkoutRequestId;
+
+                $application->update([
+                    'checkout_request_id' => $checkoutRequestId,
+                    'checkout_request_ids' => array_values(array_unique($ids)),
+                ]);
+            } catch (\Throwable $e) {
+                // The money can still arrive, so leave a loud trail to reconcile
+                // against rather than losing the link silently.
+                Log::critical('STK prompt sent but its CheckoutRequestID could not be stored. Reconcile this payment by hand.', [
+                    'reference' => $application->reference,
+                    'checkout_request_id' => $checkoutRequestId,
+                    'message' => $e->getMessage(),
+                    'exception' => $e::class,
+                ]);
+            }
+        }
+
+        return response()->json([
+            'message' => 'Payment initiated. Please enter your M-Pesa PIN.',
+            'reference' => $application->reference,
+            'checkout_request_id' => $checkoutRequestId,
+        ]);
     }
 
     /**
