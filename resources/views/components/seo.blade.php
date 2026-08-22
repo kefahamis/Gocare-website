@@ -1,18 +1,28 @@
 @php($seo = \App\Models\SeoSetting::current())
-@php($metaTitle = $metaTitle ?? $seo->default_title)
-@php($metaDescription = $metaDescription ?? $seo->meta_description)
-@php($metaImage = $metaImage ?? $seo->og_image)
-<meta name="description" content="{{ $metaDescription }}">
-@if ($seo->keywords)
-  <meta name="keywords" content="{{ $seo->keywords }}">
+@php($page = \App\Models\PageSeo::forPath(request()->getPathInfo()))
+{{-- Precedence: the per-page record, then anything the controller passed in,
+     then the site-wide default. --}}
+@php($metaTitle = $page?->meta_title ?: ($metaTitle ?? $seo->default_title))
+@php($metaDescription = $page?->meta_description ?: ($metaDescription ?? $seo->meta_description))
+@php($metaImage = $page?->og_image ?: ($metaImage ?? $seo->og_image))
+@php($metaKeywords = $page?->keywords ?: $seo->keywords)
+{{-- data-gc-seo tells ApplyPageSeo whether this description came from the page
+     record or the site-wide fallback, so it knows which of the duplicates the
+     static views emit is the one worth keeping. --}}
+<meta name="description" data-gc-seo="{{ $page?->meta_description ? 'page' : 'default' }}" content="{{ $metaDescription }}">
+@if ($metaKeywords)
+  <meta name="keywords" content="{{ $metaKeywords }}">
 @endif
 <meta name="robots" content="{{ $seo->robots ?: 'index,follow' }}">
-<link rel="canonical" href="{{ $seo->canonical_url ? rtrim($seo->canonical_url, '/') . request()->getPathInfo() : url()->current() }}">
+{{-- Per-page canonical first, for content reachable at more than one URL;
+     otherwise this page's own address, built on the configured site root. --}}
+@php($canonical = $page?->canonicalUrl($seo->canonical_url) ?: ($seo->canonical_url ? rtrim($seo->canonical_url, '/') . request()->getPathInfo() : url()->current()))
+<link rel="canonical" href="{{ $canonical }}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{ $seo->site_name }}">
 <meta property="og:title" content="{{ $metaTitle }}">
 <meta property="og:description" content="{{ $metaDescription }}">
-<meta property="og:url" content="{{ url()->current() }}">
+<meta property="og:url" content="{{ $canonical }}">
 @if ($metaImage)
   <meta property="og:image" content="{{ str_starts_with($metaImage, 'http') ? $metaImage : asset($metaImage) }}">
 @endif
@@ -39,3 +49,9 @@
     'email' => $seo->organization_email,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
 </script>
+@if ($pageSchema = $page?->decodedStructuredData())
+  {{-- Page-specific schema.org, alongside the organisation block above. --}}
+  <script type="application/ld+json">
+{!! json_encode($pageSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+  </script>
+@endif
