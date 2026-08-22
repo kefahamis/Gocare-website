@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Schools\Schemas;
 
+use App\Filament\Schemas\PageSeoSection;
 use App\Forms\Components\MediaPicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
@@ -30,6 +31,7 @@ class SchoolForm
                     ->reorderable()
                     ->columnSpanFull(),
                 Toggle::make('is_published')->default(true),
+                PageSeoSection::make(),
             ]);
     }
 }

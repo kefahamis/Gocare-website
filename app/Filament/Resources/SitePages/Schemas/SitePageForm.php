@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\SitePages\Schemas;
 
+use App\Filament\Schemas\PageSeoSection;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -20,6 +21,7 @@ class SitePageForm
                     ->rows(18)
                     ->columnSpanFull(),
                 Toggle::make('is_published')->default(true),
+                PageSeoSection::make(),
             ]);
     }
 }

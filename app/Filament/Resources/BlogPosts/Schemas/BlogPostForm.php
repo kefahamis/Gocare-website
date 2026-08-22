@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\BlogPosts\Schemas;
 
+use App\Filament\Schemas\PageSeoSection;
 use App\Forms\Components\MediaPicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Textarea;
@@ -28,6 +29,7 @@ class BlogPostForm
                     ->columnSpanFull(),
                 Toggle::make('is_published')->default(true),
                 DateTimePicker::make('published_at'),
+                PageSeoSection::make(),
             ]);
     }
 }
