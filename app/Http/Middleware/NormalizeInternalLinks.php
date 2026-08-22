@@ -9,6 +9,21 @@ use Symfony\Component\HttpFoundation\Response;
 class NormalizeInternalLinks
 {
     /**
+     * Static files that ship with the app and change with it, so a cached copy
+     * has to be invalidated on deploy.
+     *
+     * @var list<string>
+     */
+    private const VERSIONED_ASSETS = [
+        'style.css',
+        'script.js',
+        'mobile-nav.js',
+        'search.js',
+        'search-index.js',
+        'accessibility.js',
+    ];
+
+    /**
      * Convert links copied from the static site into Laravel route URLs.
      */
     public function handle(Request $request, Closure $next): Response
@@ -59,9 +74,20 @@ class NormalizeInternalLinks
             $content,
         );
 
+        // Same six files, absolute and stamped. Without the stamp a returning
+        // visitor keeps whatever the browser cached: search-index.js is 400KB
+        // of URLs and style.css carries the mobile layout, so a stale copy
+        // looks exactly like the bug that was just fixed. Matches the relative
+        // and absolute spellings both, and drops any stamp already there so
+        // running twice is harmless.
+        $assets = implode('|', array_map(
+            static fn (string $file): string => preg_quote($file, '~'),
+            self::VERSIONED_ASSETS,
+        ));
+
         $content = preg_replace_callback(
-            '~(?P<attr>\b(?:href|src)=)(?P<quote>["\'])(?!https?:|//|mailto:|tel:|data:|#|/)(?P<path>(?:\.\./)*(?:style\.css|script\.js|mobile-nav\.js|search\.js|search-index\.js|accessibility\.js))(?P=quote)~i',
-            static fn (array $match): string => $match['attr'].$match['quote'].'/'.basename($match['path']).$match['quote'],
+            '~(?P<attr>\b(?:href|src)=)(?P<quote>["\'])(?!https?:|//)(?:\.\./)*/?(?P<file>'.$assets.')(?:\?[^"\']*)?(?P=quote)~i',
+            fn (array $match): string => $match['attr'].$match['quote'].$this->versioned(strtolower($match['file'])).$match['quote'],
             $content,
         );
 
@@ -74,5 +100,24 @@ class NormalizeInternalLinks
         $response->setContent($content);
 
         return $response;
+    }
+
+    /**
+     * Absolute path to a shipped asset, stamped with its last-modified time.
+     *
+     * Memoised per request: this runs once per matched attribute and the six
+     * files are stat-ed at most once each.
+     */
+    private function versioned(string $file): string
+    {
+        static $urls = [];
+
+        if (! array_key_exists($file, $urls)) {
+            $path = public_path($file);
+            $stamp = is_file($path) ? filemtime($path) : false;
+            $urls[$file] = '/'.$file.($stamp ? '?v='.$stamp : '');
+        }
+
+        return $urls[$file];
     }
 }
