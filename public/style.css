@@ -14001,3 +14001,153 @@ input, select, textarea { min-width: 0; max-width: 100%; }
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   PAGE LOADER — "vital signs"
+   Injected after <body> by InjectPageLoader so it paints with
+   the first frame rather than after scripts run. A healthcare
+   college gets a heartbeat: the trace draws, the panel lifts.
+
+   Three things keep it from ever trapping anyone: <noscript>
+   hides it, a CSS failsafe hides it at 5s whatever JS does,
+   and reduced-motion skips the performance entirely.
+   ═══════════════════════════════════════════════════════════ */
+#gc-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(150deg, #3d1560 0%, #1a0a30 100%);
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform .72s cubic-bezier(.76, 0, .24, 1), opacity .45s ease .18s;
+  /* Failsafe: whatever happens to the script, this uncovers the page. */
+  animation: gc-loader-failsafe 0s linear 5s forwards;
+}
+
+/* The lift-away. JS adds this once the page is ready. */
+#gc-loader.gc-loader--done {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes gc-loader-failsafe {
+  to { visibility: hidden; opacity: 0; pointer-events: none; }
+}
+
+#gc-loader .gc-loader-inner {
+  width: 100%;
+  max-width: 300px;
+  text-align: center;
+}
+
+#gc-loader img {
+  width: 148px;
+  max-width: 62vw;
+  height: auto;
+  margin: 0 auto 22px;
+  display: block;
+  opacity: 0;
+  animation: gc-loader-rise .62s cubic-bezier(.22, 1, .36, 1) .06s forwards;
+}
+
+@keyframes gc-loader-rise {
+  from { opacity: 0; transform: translateY(10px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The trace. A long dasharray simply has to exceed the path length. */
+#gc-loader svg {
+  width: 100%;
+  height: 54px;
+  display: block;
+  overflow: visible;
+}
+
+/* A lit segment travelling the path, not the whole path drawing itself: the
+   trace is then continuous, the way a monitor sweeps. The path measures 313
+   units, and the gap exceeds that so only one segment is ever on screen.
+   Offset runs from +dash (segment still before the start) to -length
+   (segment just past the end). */
+#gc-loader .gc-loader-line {
+  fill: none;
+  stroke: #ec7424;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 64 400;
+  stroke-dashoffset: 64;
+  filter: drop-shadow(0 0 7px rgba(236, 116, 36, .9));
+  animation: gc-loader-trace 1.6s linear .15s infinite;
+}
+
+@keyframes gc-loader-trace {
+  from { stroke-dashoffset: 64; }
+  to   { stroke-dashoffset: -313; }
+}
+
+/* The flat baseline the trace runs along, so the line has somewhere to be. */
+#gc-loader .gc-loader-base {
+  fill: none;
+  stroke: rgba(255, 255, 255, .13);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+#gc-loader .gc-loader-word {
+  margin-top: 18px;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: .74rem;
+  font-weight: 700;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .5);
+  opacity: 0;
+  animation: gc-loader-rise .6s ease .3s forwards;
+}
+
+/* Screen-reader-only label; the visual carries no text worth announcing. */
+#gc-loader .gc-loader-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Hold the page still underneath while the panel is up. */
+html.gc-loading, html.gc-loading body { overflow: hidden; }
+
+@media (max-width: 380px) {
+  #gc-loader img { width: 124px; margin-bottom: 16px; }
+  #gc-loader svg { height: 44px; }
+  #gc-loader .gc-loader-word { font-size: .66rem; letter-spacing: .18em; }
+}
+
+/* Motion is the whole idea here, so when it is unwelcome the panel simply
+   holds still and leaves quietly. */
+@media (prefers-reduced-motion: reduce) {
+  #gc-loader,
+  #gc-loader img,
+  #gc-loader .gc-loader-line,
+  #gc-loader .gc-loader-word {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  #gc-loader { transition: opacity .2s linear; }
+  #gc-loader .gc-loader-line { stroke-dasharray: none; stroke-dashoffset: 0; }
+  #gc-loader.gc-loader--done { opacity: 0; transform: none; }
+}

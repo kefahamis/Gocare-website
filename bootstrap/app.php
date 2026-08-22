@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ApplyPageSeo;
+use App\Http\Middleware\InjectPageLoader;
 use App\Http\Middleware\NormalizeInternalLinks;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -15,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(NormalizeInternalLinks::class);
         $middleware->append(ApplyPageSeo::class);
+        $middleware->append(InjectPageLoader::class);
         $middleware->validateCsrfTokens(except: [
             'mpesa/callback',
             'mpesa/status/result',
