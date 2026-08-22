@@ -328,10 +328,6 @@
                   <option>A</option><option>A-</option><option>B+</option><option>B</option><option>B-</option><option selected>C+</option><option>C</option><option>C-</option><option>D+</option><option>D</option><option>D-</option><option>E</option>
                 </select>
               </div>
-              <div class="form-group">
-                <label>Index Number</label>
-                <input type="text" placeholder="e.g. 12345678/2024">
-              </div>
             </div>
             <div class="form-group">
               <label>Any Additional Qualifications / Certifications</label>

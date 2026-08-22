@@ -344,9 +344,11 @@ class ApplicationController extends Controller
     /**
      * Persist the full 7-step application form.
      *
-     * The M-Pesa step already created a row for this browser; this fills in the
-     * rest of the answers. If the applicant never triggered a payment there is
-     * no row yet, so one is created rather than losing the submission.
+     * The payment step already created a row for this browser and settled it;
+     * this fills in the rest of the answers. A confirmed fee is a precondition,
+     * not a detail: the form refuses to leave the payment step without one, and
+     * this refuses the submission for the same reason, so a hand-crafted POST
+     * cannot get past it either.
      */
     public function submitDetails(Request $request): JsonResponse
     {
@@ -362,25 +364,28 @@ class ApplicationController extends Controller
         // applicant cannot overwrite someone else's submission by guessing one.
         $application = $this->currentApplication($request);
 
-        if ($application) {
-            $application->update([
-                'data' => array_merge($application->data ?? [], $validated['fields']),
-                'status' => 'submitted',
-                'submitted_at' => now(),
-            ]);
-        } else {
-            $application = Application::create([
-                'reference' => $this->newReference(),
-                'status' => 'submitted',
-                'phone' => $validated['phone'],
-                'amount' => (int) config('gocare.application_fee'),
-                'payment_status' => 'pending',
-                'data' => $validated['fields'],
-                'submitted_at' => now(),
+        // No row means no payment was ever started; a row that is not `paid` is
+        // still pending, awaiting Safaricom's verification, or failed. Neither
+        // may be submitted. The browser keeps the answers, so refusing here
+        // costs the applicant nothing except the trip back to the fee.
+        if (! $application || $application->payment_status !== 'paid') {
+            Log::info('Application submission refused: fee not confirmed', [
+                'reference' => $application?->reference,
+                'payment_status' => $application?->payment_status,
             ]);
 
-            $request->session()->put('application_reference', $application->reference);
+            return response()->json([
+                'message' => 'Your application fee has not been confirmed yet. Complete the M-Pesa payment on the Payment step, then submit.',
+                'reference' => $application?->reference,
+                'payment_status' => $application?->payment_status ?? 'pending',
+            ], 422);
         }
+
+        $application->update([
+            'data' => array_merge($application->data ?? [], $validated['fields']),
+            'status' => 'submitted',
+            'submitted_at' => now(),
+        ]);
 
         Log::info('Application details saved', [
             'reference' => $application->reference,

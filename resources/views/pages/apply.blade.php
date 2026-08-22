@@ -161,6 +161,28 @@
     .upload-zone .upload-filename { font-weight: 600; color: #16a34a; font-size: 0.9rem; word-break: break-word; }
     .upload-zone .upload-error-msg { color: #dc2626; font-size: 0.85rem; font-weight: 600; }
 
+    /* payment gate — locked until M-Pesa confirms the fee */
+    .pay-gate { display: flex; align-items: flex-start; gap: 10px; margin: 18px 0 0; padding: 13px 16px;
+      border-radius: 10px; font-size: .9rem; line-height: 1.55; font-weight: 600;
+      background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; }
+    .pay-gate .pay-gate-icon { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; }
+    .pay-gate--waiting { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+    .pay-gate--paid { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+
+    /* resume-a-saved-application prompt on the intro screen */
+    .resume-box { display: none; margin: 0 0 26px; padding: 18px 20px; border-radius: 12px;
+      background: #fff7ed; border: 1px solid #fed7aa; text-align: left; }
+    .resume-box h4 { display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+      font-family: 'Outfit', sans-serif; font-size: 1rem; color: #9a3412; }
+    .resume-box p { font-size: .9rem; color: #7c2d12; margin-bottom: 14px; line-height: 1.6; }
+    .resume-box .resume-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .resume-box button { border: none; border-radius: 8px; padding: 11px 20px; font-weight: 700;
+      font-size: .9rem; cursor: pointer; font-family: inherit; }
+    .resume-btn-primary { background: var(--o); color: #fff; }
+    .resume-btn-ghost { background: transparent; color: #9a3412; border: 1px solid #fed7aa !important; }
+    .autosave-note { font-size: .8rem; color: #94a3b8; margin-top: 10px; display: flex;
+      align-items: center; gap: 6px; }
+
     /* payment */
     .pay-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
     .pay-card { border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: 0.3s; }
@@ -509,7 +531,17 @@
         <p><em>We are honored and delighted by your interest and decision to join us to pursue a course that will lead you to your dream career. We have established a tradition of excellence and high academic standards, and we commit to work endlessly to retain our position as your ideal training college of choice.</em></p>
         <p><em>Our college provides our students with a well-rounded training experience that meets international standards coupled with character development, holistic education and exposure to appropriate skills and competencies to empower, equip and prepare students who are confident, proactive and responsible citizens with the capacity to compete, access and pursue opportunities locally and globally.</em></p>
         <p><em>We are fully registered, regulated, licensed and accredited by the Ministry of Education, TVETA, TVET CDACC, NITA, KNEC and KHPOA. We are also an approved international training and examination center; USA, CANADA, IRELAND etc.</em></p>
+        <!-- Shown only when a draft from this device is found. -->
+        <div class="resume-box" id="resumeBox">
+          <h4><i data-lucide="history"></i> You have a saved application</h4>
+          <p id="resumeText">We kept everything you filled in on this device. Pick up where you left off, or start over.</p>
+          <div class="resume-actions">
+            <button type="button" class="resume-btn-primary" id="resumeContinueBtn">Resume where I left off</button>
+            <button type="button" class="resume-btn-ghost" id="resumeFreshBtn">Start a new application</button>
+          </div>
+        </div>
         <button class="intro-begin-btn" id="introBeginBtn">Begin Application <i data-lucide="arrow-right"></i></button>
+        <p class="autosave-note"><i data-lucide="save" style="width:14px;height:14px"></i> Your answers are saved on this device as you type, so you can close the page and come back.</p>
       </div>
 
       <!-- STEPPER -->
@@ -527,6 +559,14 @@
         <div class="step-item"><div class="step-col"><div class="step-circle pending" data-circle="6">6</div><div class="step-label pending-label">Accommodation</div></div></div>
         <div class="step-line pending" data-line="6"></div>
         <div class="step-item"><div class="step-col"><div class="step-circle pending" data-circle="7">7</div><div class="step-label pending-label">Review &amp; Submit</div></div></div>
+      </div>
+
+      <div class="resume-box" id="restoreNotice" style="margin-top:0;">
+        <h4><i data-lucide="paperclip"></i> Re-attach your documents</h4>
+        <p id="restoreNoticeText">Your answers were restored, but browsers cannot re-attach files for you. Open Step 4 and upload your documents again before submitting.</p>
+        <div class="resume-actions">
+          <button type="button" class="resume-btn-ghost" id="restoreNoticeDismiss">Got it</button>
+        </div>
       </div>
 
       <!-- FORM GRID -->
@@ -658,15 +698,9 @@
                   <select id="f_year"><option value="">Select Year</option><option>2025</option><option>2024</option><option>2023</option><option>2022</option><option>2021</option><option>2020</option><option>2019</option><option>Earlier</option></select>
                 </div>
               </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>KCSE Grade *</label>
-                  <select id="f_grade"><option value="">Select Grade</option><option>A</option><option>A-</option><option>B+</option><option>B</option><option>B-</option><option selected>C+</option><option>C</option><option>C-</option><option>D+</option><option>D</option><option>D-</option><option>E</option></select>
-                </div>
-                <div class="form-group">
-                  <label>Index Number</label>
-                  <input type="text" id="f_index" placeholder="e.g. 12345678/2024">
-                </div>
+              <div class="form-group">
+                <label>KCSE Grade *</label>
+                <select id="f_grade"><option value="">Select Grade</option><option>A</option><option>A-</option><option>B+</option><option>B</option><option>B-</option><option selected>C+</option><option>C</option><option>C-</option><option>D+</option><option>D</option><option>D-</option><option>E</option></select>
               </div>
               <div class="form-group">
                 <label>Any Additional Qualifications / Certifications</label>
@@ -846,6 +880,12 @@
               </div>
               <div class="form-group">
                 <p style="font-size:0.85rem;color:#64748b;"><i data-lucide="info" style="width:16px;height:16px;display:inline;vertical-align:middle;color:var(--o)"></i> Payment must be completed before your application can be processed. Allow 24 hours for confirmation.</p>
+              </div>
+              <!-- Payment gate: Step 6 stays out of reach until the server
+                   reports this application as paid. -->
+              <div class="pay-gate" id="payGate">
+                <i data-lucide="lock" class="pay-gate-icon"></i>
+                <span id="payGateText">Payment not confirmed yet. Complete the M-Pesa payment above &mdash; the rest of the application unlocks the moment M-Pesa confirms it.</span>
               </div>
               <div class="form-actions">
                 <button type="button" class="btn-prev" data-prev="4"><i data-lucide="arrow-left" style="width:18px;height:18px"></i> Previous</button>
@@ -1232,6 +1272,7 @@
       document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
       document.getElementById('step' + n).classList.add('active');
       if (n === 7) populateReview();
+      if (n === 5) refreshPaymentGate(); else stopPayGateWatch();
       renderStepper();
       scrollToFormTop();
     }
@@ -1363,8 +1404,6 @@
       if (!val('f_school').trim()) { setError(f_school, 'School name is required.'); ok = false; }
       if (!val('f_year')) { setError(f_year, 'Select the year of completion.'); ok = false; }
       if (!val('f_grade')) { setError(f_grade, 'Select your KCSE grade.'); ok = false; }
-      var idx = val('f_index').trim();
-      if (idx && !/^[A-Za-z0-9/\- ]{4,20}$/.test(idx)) { setError(f_index, 'Enter a valid index number, e.g. 12345678/2024.'); ok = false; }
       return ok;
     }
 
@@ -1405,12 +1444,25 @@
     }
 
     function validateStep5() {
+      // A confirmed payment settles this step. Never strand an applicant who
+      // has already parted with the money over a field they skipped -- someone
+      // who paid by hand may never have typed the STK number at all.
+      if (paymentConfirmed) return true;
+
       var ok = true;
       var mpesa = val('f_mpesa_phone').replace(/\s/g, '');
       if (!mpesa) { setError(f_mpesa_phone, 'M-Pesa number is required to pay the application fee.'); ok = false; }
       else if (!/^(7|1)\d{8}$/.test(mpesa)) { setError(f_mpesa_phone, 'Enter a valid 9-digit M-Pesa number, e.g. 712345678.'); ok = false; }
       var txn = val('f_txn').trim();
       if (txn && !/^[A-Za-z0-9]{6,12}$/.test(txn)) { setError(f_txn, 'Enter a valid M-Pesa transaction code, e.g. SHK3XY8ZT9.'); ok = false; }
+
+      // Nothing past this step opens until M-Pesa has confirmed the fee.
+      if (!paymentConfirmed) {
+        refreshPaymentGate();
+        var gate = document.getElementById('payGate');
+        if (gate && gate.scrollIntoView) gate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        ok = false;
+      }
       return ok;
     }
 
@@ -1492,6 +1544,93 @@
     var manualVerifyTimer = null;
     var mpesaReference = null;
 
+    /* -- PAYMENT GATE ------------------------------------------------
+       Steps 6 and 7 stay out of reach until the server reports this
+       application as paid. The flag below only drives the UI: the
+       decision is the server's /applications/status answer, and
+       /applications/submit refuses an unpaid application outright, so
+       flipping this in a console buys nothing. */
+    var paymentConfirmed = false;
+    var payGateTimer = null;
+    var PAY_GATE_LOCKED = 'Payment not confirmed yet. Complete the M-Pesa payment above &mdash; the rest of the application unlocks the moment M-Pesa confirms it.';
+    var PAY_GATE_WAITING = '&#x23F3; Your payment is recorded and waiting for M-Pesa to confirm it. This step unlocks by itself as soon as that lands &mdash; you can close the page and come back, your answers are saved on this device.';
+
+    function setPayGate(state, html) {
+      var box = document.getElementById('payGate');
+      var text = document.getElementById('payGateText');
+      if (!box || !text) return;
+      box.classList.remove('pay-gate--waiting', 'pay-gate--paid');
+      if (state === 'waiting') box.classList.add('pay-gate--waiting');
+      if (state === 'paid') box.classList.add('pay-gate--paid');
+      // Lucide swaps the <i> for an <svg> on render, and an <svg> will not
+      // re-render from a changed data-lucide -- so hand it a fresh <i>.
+      var icon = box.querySelector('.pay-gate-icon');
+      if (icon && icon.parentNode) {
+        var fresh = document.createElement('i');
+        fresh.className = 'pay-gate-icon';
+        fresh.setAttribute('data-lucide', state === 'paid' ? 'check-circle-2' : (state === 'waiting' ? 'clock' : 'lock'));
+        icon.parentNode.replaceChild(fresh, icon);
+      }
+      text.innerHTML = html;
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function markPaid(reference) {
+      if (reference) mpesaReference = reference;
+      paymentConfirmed = true;
+      stopPayGateWatch();
+      setPayGate('paid', '&#10003; Payment confirmed'
+        + (mpesaReference ? ' &mdash; reference <strong>' + mpesaReference + '</strong>' : '')
+        + '. You can continue to the next step.');
+      saveDraft();
+    }
+
+    async function checkPaymentStatus() {
+      if (!mpesaReference) return null;
+      try {
+        const res = await fetch('/applications/status/' + encodeURIComponent(mpesaReference), {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.payment_status || null;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    async function refreshPaymentGate() {
+      if (paymentConfirmed) { markPaid(); return; }
+      if (!mpesaReference) { setPayGate('locked', PAY_GATE_LOCKED); return; }
+
+      var status = await checkPaymentStatus();
+      if (status === 'paid') { markPaid(); return; }
+
+      if (status === 'awaiting_verification') {
+        setPayGate('waiting', PAY_GATE_WAITING);
+      } else if (status === 'failed') {
+        setPayGate('locked', '&#x26A0; The last payment attempt failed or was cancelled. Send the request again above, or pay manually.');
+      } else {
+        setPayGate('locked', PAY_GATE_LOCKED);
+      }
+      startPayGateWatch();
+    }
+
+    /* A confirmation can land minutes after the STK poll gives up, so keep a
+       slow watch running while the applicant sits on the Payment step. */
+    function startPayGateWatch() {
+      if (payGateTimer || paymentConfirmed || !mpesaReference) return;
+      payGateTimer = setInterval(async function () {
+        var status = await checkPaymentStatus();
+        if (status === 'paid') markPaid();
+        else if (status === 'awaiting_verification') setPayGate('waiting', PAY_GATE_WAITING);
+      }, 6000);
+    }
+
+    function stopPayGateWatch() {
+      if (payGateTimer) { clearInterval(payGateTimer); payGateTimer = null; }
+    }
+
     function setMpesaStatus(color, html) {
       var status = document.getElementById('mpesaStatus');
       status.style.display = 'block';
@@ -1553,6 +1692,17 @@
         }
 
         mpesaReference = data.reference;
+        saveDraft();
+
+        // store() short-circuits when this application is already settled.
+        if (data.payment_status === 'paid') {
+          markPaid(data.reference);
+          setMpesaStatus('#2e7d32', '&#10003; This application is already paid. Reference ' + data.reference + '.');
+          btn.innerHTML = '<i data-lucide="check"></i> Paid';
+          if (window.lucide) lucide.createIcons();
+          return;
+        }
+
         setMpesaStatus('#1565c0', '&#x23F3; STK Push sent to +' + phone + '. Check your phone and enter your M-Pesa PIN to complete payment.');
         btn.innerHTML = '<i data-lucide="smartphone"></i> Check your phone';
         if (window.lucide) lucide.createIcons();
@@ -1607,6 +1757,7 @@
         }
 
         mpesaReference = data.reference;
+        saveDraft();
 
         var isTill = data.method === 'till';
         document.getElementById('manualMethodLabel').textContent = isTill ? 'Buy Goods and Services' : 'Pay Bill';
@@ -1715,6 +1866,7 @@
           const data = await res.json();
 
           if (data.payment_status === 'paid') {
+            markPaid(reference);
             manualVerifyDone(
               '&#10003; Payment of code ' + code + ' confirmed by M-Pesa. Reference ' + reference + '.',
               '#2e7d32',
@@ -1762,6 +1914,7 @@
           if (data.payment_status === 'paid') {
             clearInterval(mpesaPollTimer);
             mpesaPollTimer = null;
+            markPaid(reference);
             setMpesaStatus('#2e7d32', '&#10003; Payment received. Reference ' + reference + '.');
             document.getElementById('mpesaPromptBtn').innerHTML = '<i data-lucide="check"></i> Paid';
             if (window.lucide) lucide.createIcons();
@@ -1819,7 +1972,7 @@
       var textIds = [
         'f_name', 'f_dob', 'f_nationality', 'f_id', 'f_phone', 'f_email',
         'f_county', 'f_address', 'f_qual', 'f_school', 'f_year', 'f_grade',
-        'f_index', 'f_addqual', 'f_school_sel', 'f_program', 'f_intake_month',
+        'f_addqual', 'f_school_sel', 'f_program', 'f_intake_month',
         'f_intake_year', 'f_campus', 'f_mpesa_phone', 'f_txn', 'f_paydate',
         'f_room_type', 'f_acc_campus', 'f_acc_intake', 'f_acc_notes'
       ];
@@ -1878,6 +2031,7 @@
           return;
         }
 
+        clearDraft();
         document.getElementById('appIdValue').textContent = data.reference;
         document.getElementById('successOverlay').classList.add('show');
         if (window.lucide) lucide.createIcons();
@@ -2062,6 +2216,184 @@
       });
 
       programSel.disabled = true;
+    })();
+  </script>
+  <!-- ================= AUTOSAVE =================================
+       Keeps the 7 steps in localStorage so a refresh, a dropped
+       connection or a closed tab does not cost the applicant their
+       answers. File inputs are deliberately absent: no browser lets a
+       page re-attach a file it did not receive from the user.
+       ============================================================ -->
+  <script>
+    (function () {
+      var KEY = 'gocare_apply_draft_v1';
+      var MAX_AGE_DAYS = 30;
+      var saveTimer = null;
+
+      function storage() {
+        try {
+          var s = window.localStorage;
+          s.setItem('__gc_probe', '1');
+          s.removeItem('__gc_probe');
+          return s;
+        } catch (e) {
+          return null;           // private mode, or site data blocked
+        }
+      }
+
+      /* Every value the form holds that a browser is allowed to restore. */
+      function collectDraft() {
+        var grid = document.getElementById('appGrid');
+        if (!grid) return null;
+
+        var fields = {};
+        grid.querySelectorAll('input, select, textarea').forEach(function (el) {
+          if (!el.id || el.type === 'file' || el.type === 'radio' || el.type === 'checkbox') return;
+          if (el.value) fields[el.id] = el.value;
+        });
+
+        var radios = {};
+        grid.querySelectorAll('input[type="radio"]:checked').forEach(function (el) {
+          if (el.name) radios[el.name] = el.value;
+        });
+
+        return {
+          v: 1,
+          savedAt: Date.now(),
+          step: (typeof currentStep === 'number' ? currentStep : 1),
+          reference: (typeof mpesaReference !== 'undefined' ? mpesaReference : null),
+          fields: fields,
+          radios: radios
+        };
+      }
+
+      window.saveDraft = function () {
+        var s = storage();
+        if (!s) return;
+        var d = collectDraft();
+        if (!d) return;
+        try { s.setItem(KEY, JSON.stringify(d)); } catch (e) { /* quota */ }
+      };
+
+      window.clearDraft = function () {
+        var s = storage();
+        if (!s) return;
+        try { s.removeItem(KEY); } catch (e) { /* ignore */ }
+      };
+
+      function readDraft() {
+        var s = storage();
+        if (!s) return null;
+        var raw;
+        try { raw = s.getItem(KEY); } catch (e) { return null; }
+        if (!raw) return null;
+        var d;
+        try { d = JSON.parse(raw); } catch (e) { return null; }
+        if (!d || d.v !== 1 || !d.savedAt) return null;
+        if (Date.now() - d.savedAt > MAX_AGE_DAYS * 86400000) { window.clearDraft(); return null; }
+        var filled = d.fields && Object.keys(d.fields).length;
+        return filled ? d : null;
+      }
+
+      function scheduleSave() {
+        if (saveTimer) clearTimeout(saveTimer);
+        saveTimer = setTimeout(window.saveDraft, 400);
+      }
+
+      function describeAge(ms) {
+        var mins = Math.floor((Date.now() - ms) / 60000);
+        if (mins < 2) return 'a moment ago';
+        if (mins < 60) return mins + ' minutes ago';
+        var hours = Math.floor(mins / 60);
+        if (hours < 24) return hours === 1 ? 'about an hour ago' : 'about ' + hours + ' hours ago';
+        var days = Math.floor(hours / 24);
+        return days === 1 ? 'yesterday' : days + ' days ago';
+      }
+
+      function restoreDraft(d) {
+        var fields = d.fields || {};
+
+        Object.keys(fields).forEach(function (id) {
+          if (id === 'f_program') return;          // filled by the school dropdown below
+          var el = document.getElementById(id);
+          if (!el || el.type === 'file') return;
+          el.value = fields[id];
+          // The programme list is built from the school choice, so let that
+          // handler run before we try to select a programme.
+          if (id === 'f_school_sel') el.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+
+        if (fields.f_program) {
+          var prog = document.getElementById('f_program');
+          if (prog) prog.value = fields.f_program;
+        }
+
+        Object.keys(d.radios || {}).forEach(function (name) {
+          var v = d.radios[name];
+          if (!v) return;
+          var found = null;
+          document.querySelectorAll('input[name="' + name + '"]').forEach(function (r) {
+            if (r.value === v) found = r;
+          });
+          if (found) found.checked = true;
+        });
+        if (typeof toggleAccommodation === 'function') toggleAccommodation();
+
+        if (d.reference && typeof mpesaReference !== 'undefined') mpesaReference = d.reference;
+
+        document.getElementById('formIntro').style.display = 'none';
+        document.getElementById('stepper').style.display = 'flex';
+        document.getElementById('appGrid').style.display = 'grid';
+
+        var step = parseInt(d.step, 10);
+        if (!step || step < 1) step = 1;
+        if (step > 7) step = 7;
+        showStep(step);
+
+        // Past the upload step the applicant needs to know the files are gone.
+        if (step > 4) {
+          var notice = document.getElementById('restoreNotice');
+          if (notice) notice.style.display = 'block';
+        }
+        if (window.lucide) lucide.createIcons();
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        var grid = document.getElementById('appGrid');
+        if (grid) {
+          grid.addEventListener('input', scheduleSave);
+          grid.addEventListener('change', scheduleSave);
+        }
+
+        var dismiss = document.getElementById('restoreNoticeDismiss');
+        if (dismiss) dismiss.addEventListener('click', function () {
+          document.getElementById('restoreNotice').style.display = 'none';
+        });
+
+        var draft = readDraft();
+        if (!draft) return;
+
+        var box = document.getElementById('resumeBox');
+        var text = document.getElementById('resumeText');
+        if (!box) return;
+
+        if (text) {
+          text.textContent = 'We kept everything you filled in on this device, saved '
+            + describeAge(draft.savedAt) + ' at step ' + (draft.step || 1)
+            + ' of 7. Pick up where you left off, or start over.';
+        }
+        box.style.display = 'block';
+        if (window.lucide) lucide.createIcons();
+
+        document.getElementById('resumeContinueBtn').addEventListener('click', function () {
+          box.style.display = 'none';
+          restoreDraft(draft);
+        });
+        document.getElementById('resumeFreshBtn').addEventListener('click', function () {
+          window.clearDraft();
+          box.style.display = 'none';
+        });
+      });
     })();
   </script>
   <script src="search-index.js" defer></script>
