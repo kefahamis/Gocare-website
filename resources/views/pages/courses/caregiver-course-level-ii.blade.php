@@ -413,7 +413,8 @@
     /* -- MOBILE MENU --------------- */
     const ham = document.getElementById('hamBtn'), mob = document.getElementById('mobMenu');
     const mobOvl = document.createElement('div'); mobOvl.className = 'mob-overlay'; document.body.appendChild(mobOvl);
-    const _logoSrc = document.querySelector('.logo img')?.src || 'images/gocare-institute-logo.png';
+    var _logoEl = document.querySelector('.logo img');
+    var _logoSrc = (_logoEl && _logoEl.src) || 'images/gocare-institute-logo.png';
     const mobDrawHead = document.createElement('div'); mobDrawHead.className = 'mob-drawer-head'; mobDrawHead.innerHTML = '<img loading="eager" decoding="async" src="' + _logoSrc + '" alt="GoCare"><button class="mob-drawer-close" id="mobClose"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'; document.body.appendChild(mob); mob.prepend(mobDrawHead);
     function openDrawer(){ ham.classList.add('open'); mobOvl.style.display='block'; mob.animate([{transform:'translateX(105vw)'},{transform:'translateX(0)'}],{duration:450,easing:'cubic-bezier(.76,0,.24,1)',fill:'forwards'}); mobOvl.animate([{opacity:0},{opacity:1}],{duration:280,fill:'forwards'}); document.body.style.overflow='hidden'; }
     function closeDrawer(){ ham.classList.remove('open'); document.body.style.overflow=''; mob.animate([{transform:'translateX(0)'},{transform:'translateX(105vw)'}],{duration:450,easing:'cubic-bezier(.76,0,.24,1)',fill:'forwards'}); mobOvl.animate([{opacity:1},{opacity:0}],{duration:280,fill:'forwards'}).onfinish=()=>{mobOvl.style.display='none';}; }

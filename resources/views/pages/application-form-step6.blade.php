@@ -590,7 +590,7 @@
       async function pollPaymentStatus(reference) {
           pollingInterval = setInterval(async () => {
               try {
-                  const res = await fetch(/applications/status/ + reference);
+                  const res = await fetch('/applications/status/' + reference);
                   const data = await res.json();
                   
                   if (data.payment_status === 'paid') {

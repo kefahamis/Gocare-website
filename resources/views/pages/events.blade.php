@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="style.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    .events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:28px}
+    .events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr));gap:28px}
     .event-card{background:#F5F0E8;border-radius:16px;border:1px solid var(--border);overflow:hidden;transition:.3s var(--ease);box-shadow:0 2px 12px rgba(0,0,0,.05)}
     .event-card:hover{transform:translateY(-6px);box-shadow:0 16px 48px rgba(0,0,0,.1)}
     .event-img{height:200px;overflow:hidden;position:relative}
@@ -45,7 +45,7 @@
     .ev-header p{font-family:"Plus Jakarta Sans",sans-serif;font-size:1rem;line-height:1.7;color:var(--gray)}
 
     /* Event types */
-    .ev-types-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px}
+    .ev-types-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:24px}
     .ev-type-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:32px 28px;transition:.3s var(--ease);box-shadow:0 2px 12px rgba(0,0,0,.04)}
     .ev-type-card:hover{transform:translateY(-6px);box-shadow:0 18px 44px rgba(100,42,126,.12);border-color:rgba(236,116,36,.3)}
     .ev-type-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(236,116,36,.15),rgba(100,42,126,.12));color:var(--o);margin-bottom:18px}

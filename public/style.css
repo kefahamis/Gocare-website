@@ -1268,10 +1268,13 @@ input[type="reset"],
 .ph-breadcrumb {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   font-size: .8rem;
   color: rgba(255,255,255,.55);
+  min-width: 0;
 }
+.ph-breadcrumb a, .ph-breadcrumb span { min-width: 0; overflow-wrap: break-word; }
 .ph-breadcrumb a { color: rgba(255,255,255,.55); transition: color .2s; }
 .ph-breadcrumb a:hover { color: #ec7424; }
 .ph-breadcrumb .lucide { width:13px; height:13px; stroke:currentColor; fill:none; }
@@ -7303,7 +7306,7 @@ textarea.form-control {
 
 .courses-page-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: 30px;
   max-width: 1200px;
   margin: 0 auto;
@@ -7743,7 +7746,7 @@ textarea.form-control {
 
 .values-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: 30px;
   margin-top: 50px;
 }
@@ -9292,11 +9295,11 @@ textarea.form-control {
 .career-sectors-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-top: 40px; }
 .intl-card { position: relative; overflow: hidden; }
 .careers-footer { position: relative; overflow: hidden; }
-.requirements-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; margin-top: 40px; }
+.requirements-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 30px; margin-top: 40px; }
 .check-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .check-list li { display: flex; align-items: flex-start; gap: 12px; font-size: 0.95rem; color: var(--gray); }
 .check-list li i { color: var(--o); width: 18px; margin-top: 2px; flex-shrink: 0; }
-.apply-options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 40px; }
+.apply-options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr)); gap: 40px; }
 @media (max-width: 992px) { .apply-options-grid { grid-template-columns: 1fr; } }
 .apply-card { background: #f5ebd2; border-radius: 24px; box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.03); overflow: hidden; transition: transform 0.3s var(--ease); }
 .apply-card:hover { transform: translateY(-8px); }
@@ -9321,7 +9324,7 @@ textarea.form-control {
 .accreditations-strip { background: #f5ebd2; padding: 40px; border-radius: 20px; box-shadow: var(--card-shadow); margin-bottom: 50px; text-align: center; }
 .acc-logos { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-bottom: 20px; }
 .acc-logos span { font-family: Outfit, sans-serif; font-weight: 800; color: var(--dark); opacity: 0.3; font-size: 1.2rem; }
-.benefits-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.benefits-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 20px; }
 .benefit-item { display: flex; align-items: center; gap: 12px; padding: 15px 20px; background: var(--light); border-radius: 12px; font-weight: 600; font-size: 0.9rem; color: var(--dark); }
 .benefit-item i { color: var(--o); flex-shrink: 0; }
 
@@ -9541,7 +9544,7 @@ textarea.form-control {
   .testi-cards-row { grid-template-columns: 1fr; margin-top: 20px; }
   .success-grid { grid-template-columns: 1fr; }
   .success-col { border-right: none; border-bottom: 1px solid #eee; }
-  .success-ctas { flex-direction: row; flex-wrap: nowrap; padding: 0 20px; }
+  .success-ctas { flex-direction: row; flex-wrap: wrap; justify-content: center; padding: 0 20px; }
 }
 /* ── NEW COURSES PAGE DESIGN ─────────────────────── */
 .courses-hero-split { background: #fff; padding: 40px 0; border-bottom: 1px solid var(--border); }
@@ -9705,13 +9708,15 @@ textarea.form-control {
   .testi-hero { padding: 60px 0 100px; }
   .testi-hero-grid { grid-template-columns: 1fr; text-align: center; gap: 40px; }
   .testi-hero-content h2 { font-size: 3rem; }
-  .testi-hero-marquee { max-width: 500px; margin: 0 auto; }
+  .testi-hero-marquee { max-width: min(500px, 100%); margin: 0 auto; }
   .testi-slider-container { margin-top: -50px; }
 }
 @media (max-width: 600px) {
   .courses-cat-grid { grid-template-columns: 1fr; }
   .testi-hero-content h2 { font-size: 2.5rem; }
-  .testi-hero { border-radius: 0; margin-left: -20px; margin-right: -20px; }
+  /* Full-bleed already: .testi-sec has no side padding, so negative margins
+     here only pushed the section 40px past the viewport on phones. */
+  .testi-hero { border-radius: 0; }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -10984,7 +10989,8 @@ input[type="reset"],
 
   .success-ctas {
     flex-direction: row;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    justify-content: center;
     align-items: center;
     gap: 12px;
   }
@@ -13833,4 +13839,165 @@ img, video, iframe { max-width: 100%; }
 
 .gc-a11y-btn{
     display:none !important;
+}
+/* ═══════════════════════════════════════════════════════════
+   SMALL & OLDER PHONES — 320px up, iOS 12–15, Android 5+
+   Everything above assumes `overflow: clip`, modern grid sizing
+   and 16px form fields. This block supplies the fallbacks and
+   closes the gaps that show up between 320px and 480px.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 1. Sideways-scroll containment that also works pre-2022 ──
+   `overflow-x: clip` (used further up) is Chrome 90+ / Safari 16+.
+   Phones older than that drop the declaration and scroll sideways.
+   `hidden` on <html> alone propagates to the viewport, which stops the
+   sideways scroll while leaving <html> itself `visible` — so
+   `position: sticky` on the nav keeps working. Declaration order
+   matters: browsers that understand `clip` take the later rule. */
+html { overflow-x: hidden; }
+html, body { overflow-x: clip; }
+
+/* ── 2. Stop iOS/Android inflating text in landscape ── */
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* ── 3. Nothing may be wider than its column ── */
+/* No blanket `height: auto` here — plenty of images below are sized with
+   `height: 100%` + object-fit, and this block is last in the cascade. */
+img, svg, video, iframe, canvas, table { max-width: 100%; }
+
+/* Long words, URLs and email addresses break instead of stretching a card */
+h1, h2, h3, h4, h5, h6, p, li, dd, dt, td, th, figcaption, label, blockquote {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Form controls carry an intrinsic width from their `size` attribute
+   (~20 characters). Inside a grid or flex track that intrinsic width
+   becomes the minimum track size and pushes the whole column past the
+   viewport — this is what widened the application form on phones. */
+input, select, textarea { min-width: 0; max-width: 100%; }
+
+/* ── 4. Grid and flex children must be allowed to shrink ──
+   Items default to `min-width: auto`, i.e. never narrower than their
+   content. Site-wide the layout containers are named *-grid, *-row and
+   *-layout, so this reaches them without touching anything else
+   (`min-width: 0` is already the used value on ordinary block boxes). */
+@media (max-width: 900px) {
+  [class*="-grid"] > *,
+  [class*="-row"] > *,
+  [class*="-layout"] > *,
+  [class*="-split"] > * { min-width: 0; }
+}
+
+/* ── 5. Form fields: 16px minimum stops iOS zooming the page on focus ──
+   Below 16px Safari zooms in when a field takes focus and never zooms
+   back out, which is what makes a page look "stuck" at double size. */
+@media (max-width: 900px) {
+  input, select, textarea { font-size: 16px; }
+  .form-group input,
+  .form-group select,
+  .form-group textarea { font-size: 16px; }
+}
+
+/* ── 6. Touch targets ── */
+@media (max-width: 900px) {
+  a, button, input, select, textarea, label { touch-action: manipulation; }
+  button, .btn { min-height: 40px; }
+  input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; }
+}
+
+/* ── 7. Legibility floor — nothing under ~11px on a phone.
+   The `body` prefix is deliberate: these classes are declared in each
+   page's own <style> block, which sits after this file in the head and
+   would otherwise win on equal specificity. ── */
+@media (max-width: 480px) {
+  body .hl-card-cat, body .hl-card-level, body .hl-card-dur,
+  body .intk-mchip span, body .sc-card-badge, body .sc-card-dur,
+  body .crs-badge, body .crs-level, body .school-tab-count,
+  body .step-label, body .blog-card-tag, body .blog-lead-tag,
+  body .gal-item-label, body .event-badge { font-size: 11px; }
+}
+
+/* ── 8. Section padding that was tuned for desktop ──
+   50px of side padding on a 320px screen leaves 220px of usable width. */
+@media (max-width: 600px) {
+  .special-offer { padding: 32px 20px !important; }
+  .icp-partners, .aha-section, .amca-section { padding: 32px 16px !important; }
+  .amca-inner, .amca-layout { padding-left: 0; padding-right: 0; }
+}
+@media (max-width: 360px) {
+  .wrap, .an-wrap, .cp-wrap, .ac-wrap, .mos-wrap, .bp-wrap, .app-wrap {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
+/* ── 9. Hero heights — a 600px hero is taller than a 320x480 screen ──
+   These heroes hold absolutely positioned slides, so they need a height,
+   not `auto`; the numbers just come down to something a small phone can
+   show alongside the first line of content. */
+@media (max-width: 600px) {
+  .hero { height: 460px; }
+  .course-hero { min-height: 420px; }
+  .bp-hero { height: 220px !important; }
+  .map-container { height: 300px; }
+}
+@media (max-width: 400px) {
+  .hero { height: 400px; }
+  .ph { min-height: 260px; }
+  .bp-hero { height: 180px !important; }
+}
+
+/* ── 10. About page image stack — the absolutely positioned cards
+   were offset outside the column on narrow screens ── */
+@media (max-width: 480px) {
+  .visual-stack { height: 320px; }
+  .v-img--1 { width: 88%; height: 240px; }
+  .v-img--2 { width: 62%; height: 180px; right: 0; }
+  .v-experience-badge { left: 0; padding: 16px 18px; border-radius: 16px; }
+  .v-exp-num { font-size: 1.8rem; }
+}
+
+/* ── 11. Breadcrumbs, button rows and tag rows must wrap ── */
+@media (max-width: 768px) {
+  .ph-breadcrumb, .ph-btns, .crs-tags, .aha-head,
+  .app-footer-nav, .hero-cta, .course-hero-content .ph-btns {
+    flex-wrap: wrap;
+  }
+  .ph-btns > a, .hero-cta > a { flex: 0 1 auto; }
+}
+
+/* ── 12. Application form: stepper, two-up field rows and the
+   Back / Continue bar (a space-between flex row whose uppercase
+   buttons are wider than a 320px screen on their own) ── */
+@media (max-width: 600px) {
+  .app-grid { grid-template-columns: minmax(0, 1fr); }
+  .form-row { grid-template-columns: minmax(0, 1fr); }
+  .stepper { flex-wrap: wrap; row-gap: 14px; }
+  .step-item { flex: 0 0 auto; }
+  .form-actions { flex-wrap: wrap; row-gap: 12px; }
+  .form-actions > .btn-next,
+  .form-actions > .btn-submit,
+  .form-actions > .btn-back,
+  .form-actions > a,
+  .form-actions > button {
+    flex: 1 1 100%;
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+/* ── 13. Wide tables scroll inside their own box instead of the page.
+   .compare-table-scroll already does this; the substring selector keeps
+   any future *-table-scroll / *-table-wrap wrapper covered too. ── */
+@media (max-width: 768px) {
+  [class*="table-scroll"], [class*="table-wrap"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }

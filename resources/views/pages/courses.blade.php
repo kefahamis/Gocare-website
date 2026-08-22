@@ -602,7 +602,7 @@
         </div>
 
         <!-- Cards grid -->
-        <div id="crsGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;">
+        <div id="crsGrid">
 
           <!-- Certificate Courses -->
           <a href="courses/certificate-in-healthcare-support-services-level-5-certified-nursing-assistant" class="crs-card" data-cat="medical">
@@ -983,8 +983,12 @@
       .crs-tab .lucide { width:14px; height:14px; }
       /* Hidden cards */
       .crs-card.hidden { display:none; }
-      @media(max-width:1024px){ #crsGrid{ grid-template-columns:repeat(2,1fr); } }
-      @media(max-width:600px){ #crsGrid{ grid-template-columns:1fr; } }
+      /* Column count lives here, not in an inline style: an inline
+         grid-template-columns wins over every media query below. */
+      #crsGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; }
+      #crsGrid > .crs-card { min-width:0; }
+      @media(max-width:1024px){ #crsGrid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+      @media(max-width:600px){ #crsGrid{ grid-template-columns:minmax(0,1fr); } }
     </style>
 
 </div><!-- /ac-page -->

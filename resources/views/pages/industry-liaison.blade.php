@@ -204,7 +204,7 @@
     .ilo-card-icon .lucide { width: 30px; height: 30px; }
     .ilo-card h3 { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: #4a1a6d; line-height: 1.2; margin-bottom: 8px; }
     .ilo-card p { font-size: .96rem; color: #64748b; line-height: 1.6; flex-grow: 1; }
-    .ilo-card-logos { display: flex; align-items: center; gap: 16px; margin-top: 6px; }
+    .ilo-card-logos { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 6px; }
     .ilo-card-logos img { height: 30px; width: auto; object-fit: contain; }
     .ilo-card-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 18px; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: .9rem; color: #ec7424; transition: gap .2s; }
     .ilo-card-link i { width: 16px; height: 16px; }

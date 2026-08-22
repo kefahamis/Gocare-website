@@ -343,7 +343,7 @@
          <h2 style="font-family:'Outfit', sans-serif; font-size:2.8rem; color:var(--dark); font-weight:800; margin-bottom:20px">Comprehensive <span style="color:var(--p)">Homecare</span> Solutions</h2>
          <p style="font-size:1.2rem; color:var(--gray); max-width:800px; margin:0 auto; line-height:1.8">We bring the hospital experience to your home with professional expertise and compassionate care.</p>
        </div>
-       <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:30px">
+       <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap:30px">
           <div style="background:#fff; padding:40px; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05)">
             <h4 style="font-family:'Outfit', sans-serif; font-size:1.6rem; color:var(--dark); margin-bottom:20px">Nursing Care</h4>
             <p style="color:var(--gray); line-height:1.7; font-size:0.95rem">Professional nursing services including wound dressing, medication administration, and vital signs monitoring by certified experts.</p>
