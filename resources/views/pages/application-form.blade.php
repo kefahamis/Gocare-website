@@ -371,9 +371,13 @@
                 <label>Nationality *</label>
                 <select required>
                   <option value="">Select</option>
-                  <option selected>Kenyan</option>
-                  <option>Ugandan</option>
-                  <option>Tanzanian</option>
+                  <option selected>Kenya</option>
+                  <option value="" disabled>──────────</option>
+                  @foreach (config('countries') as $country)
+                    @continue($country === 'Kenya')
+                    <option>{{ $country }}</option>
+                  @endforeach
+                  <option value="" disabled>──────────</option>
                   <option>Other</option>
                 </select>
               </div>

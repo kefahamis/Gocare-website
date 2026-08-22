@@ -597,7 +597,20 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Nationality *</label>
-                  <select id="f_nationality"><option value="">Select</option><option selected>Kenyan</option><option>Ugandan</option><option>Tanzanian</option><option>Other</option></select>
+                  {{-- Kenya is pinned to the top and skipped in the loop below,
+                       so it never appears twice. The rest are the ISO 3166-1
+                       countries in collated alphabetical order. --}}
+                  <select id="f_nationality">
+                    <option value="">Select</option>
+                    <option selected>Kenya</option>
+                    <option value="" disabled>──────────</option>
+                    @foreach (config('countries') as $country)
+                      @continue($country === 'Kenya')
+                      <option>{{ $country }}</option>
+                    @endforeach
+                    <option value="" disabled>──────────</option>
+                    <option>Other</option>
+                  </select>
                 </div>
                 <div class="form-group">
                   <label>ID/Passport Number *</label>
