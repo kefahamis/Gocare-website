@@ -883,14 +883,6 @@
                 </div>
                 <div id="manualPayStatus" style="margin-top:12px;display:none;"></div>
               </div>
-              <div class="form-row">
-                <div class="form-group"><label>Transaction Code (if paid)</label><input type="text" id="f_txn" placeholder="e.g. SHK3XY8ZT9"></div>
-                <div class="form-group"><label>Payment Date</label><input type="date" id="f_paydate"></div>
-              </div>
-              <div class="form-group">
-                <label>Upload Payment Receipt (Optional)</label>
-                <div class="upload-zone"><i data-lucide="upload-cloud"></i><p>JPG, PNG or PDF (Max 2MB)</p><input type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:none"></div>
-              </div>
               <div class="form-group">
                 <p style="font-size:0.85rem;color:#64748b;"><i data-lucide="info" style="width:16px;height:16px;display:inline;vertical-align:middle;color:var(--o)"></i> Payment must be completed before your application can be processed. Allow 24 hours for confirmation.</p>
               </div>
@@ -1479,8 +1471,6 @@
       var mpesa = val('f_mpesa_phone').replace(/\s/g, '');
       if (!mpesa) { setError(f_mpesa_phone, 'M-Pesa number is required to pay the application fee.'); ok = false; }
       else if (!/^(7|1)\d{8}$/.test(mpesa)) { setError(f_mpesa_phone, 'Enter a valid 9-digit M-Pesa number, e.g. 712345678.'); ok = false; }
-      var txn = val('f_txn').trim();
-      if (txn && !/^[A-Za-z0-9]{6,12}$/.test(txn)) { setError(f_txn, 'Enter a valid M-Pesa transaction code, e.g. SHK3XY8ZT9.'); ok = false; }
 
       // Nothing past this step opens until M-Pesa has confirmed the fee.
       if (!paymentConfirmed) {
@@ -1856,10 +1846,6 @@
         // Stop the STK poll: the applicant has settled this by hand.
         if (mpesaPollTimer) { clearInterval(mpesaPollTimer); mpesaPollTimer = null; }
 
-        // Carry the code into the form data that step 7 submits.
-        var txn = document.getElementById('f_txn');
-        if (txn && !txn.value) { txn.value = code; }
-
         if (data.verifying) {
           // Safaricom answers the status query on its own callback, so watch
           // the application until that lands.
@@ -2016,7 +2002,7 @@
         'f_name', 'f_dob', 'f_nationality', 'f_id', 'f_phone', 'f_email',
         'f_county', 'f_address', 'f_qual', 'f_school', 'f_year', 'f_grade',
         'f_addqual', 'f_school_sel', 'f_program', 'f_intake_month',
-        'f_intake_year', 'f_campus', 'f_mpesa_phone', 'f_txn', 'f_paydate',
+        'f_intake_year', 'f_campus', 'f_mpesa_phone',
         'f_room_type', 'f_acc_campus', 'f_acc_intake', 'f_acc_notes'
       ];
 

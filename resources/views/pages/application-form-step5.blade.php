@@ -342,26 +342,6 @@
               <p><strong>Bank:</strong> Kenya Commercial Bank<br><strong>Account Name:</strong> GoCare Training Institute<br><strong>Account Number:</strong> 1234567890<br><strong>Branch:</strong> Nairobi CBD<br>Use your name as the payment reference.</p>
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label>Transaction Code (if paid)</label>
-                <input type="text" placeholder="e.g. SHK3XY8ZT9">
-              </div>
-              <div class="form-group">
-                <label>Payment Date</label>
-                <input type="date">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Upload Payment Receipt (Optional)</label>
-              <div class="upload-zone" style="border:2px dashed #cbd5e1;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:0.3s;background:#f8fafc;">
-                <i data-lucide="upload-cloud" style="color:var(--o)"></i>
-                <p style="color:#64748b;font-size:0.9rem;margin-top:5px">JPG, PNG or PDF (Max 2MB)</p>
-                <input type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:none">
-              </div>
-            </div>
-
             <div class="form-group">
               <p style="font-size:0.85rem;color:#64748b;"><i data-lucide="info" style="width:16px;height:16px;display:inline;vertical-align:middle;color:var(--o)"></i> Payment must be completed before your application can be processed. Allow 24 hours for confirmation.</p>
             </div>
