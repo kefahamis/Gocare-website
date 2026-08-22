@@ -1324,15 +1324,28 @@
       return el.closest('.form-group') || el.parentElement;
     }
 
+    /* Fields sharing one .form-group (Preferred Intake holds both a month and
+       a year) each need their own message slot, or the second setError call
+       silently overwrites the first and only one problem is ever reported. */
+    function errorSlot(box, key) {
+      var sel = ':scope > .field-error[data-for="' + key + '"]';
+      var err = box.querySelector(sel);
+      if (!err) {
+        err = document.createElement('span');
+        err.className = 'field-error';
+        err.setAttribute('data-for', key);
+        box.appendChild(err);
+      }
+      return err;
+    }
+
     function setError(target, msg) {
       var el = (typeof target === 'string') ? document.getElementById(target) : target;
       if (!el) return;
       el.classList.add('input-error');
       var box = errorContainer(el);
       if (!box) return;
-      var err = box.querySelector(':scope > .field-error');
-      if (!err) { err = document.createElement('span'); err.className = 'field-error'; box.appendChild(err); }
-      err.textContent = msg;
+      errorSlot(box, el.id || el.name || 'field').textContent = msg;
     }
 
     function setRadioError(name, msg) {
@@ -1344,9 +1357,7 @@
       if (!grp) return;
       grp.classList.add('error');
       var box = grp.parentElement || grp;
-      var err = box.querySelector(':scope > .field-error');
-      if (!err) { err = document.createElement('span'); err.className = 'field-error'; box.appendChild(err); }
-      err.textContent = msg;
+      errorSlot(box, name).textContent = msg;
     }
 
     function clearElError(el) {
@@ -1370,7 +1381,9 @@
       el.classList.remove('input-error');
       var box = errorContainer(el);
       if (box) {
-        var e = box.querySelector(':scope > .field-error');
+        var key = el.id || el.name || 'field';
+        var e = box.querySelector(':scope > .field-error[data-for="' + key + '"]')
+          || box.querySelector(':scope > .field-error:not([data-for])');
         if (e) e.remove();
       }
     }
@@ -1507,6 +1520,23 @@
     }
 
     var STEP_VALIDATORS = { 1: validateStep1, 2: validateStep2, 3: validateStep3, 4: validateStep4, 5: validateStep5, 6: validateStep6, 7: validateStep7 };
+
+    /* A blocked Next reads as a dead button when the offending field sits above
+       the fold on a long step. Put the first one on screen and in focus.
+       The payment gate is left out on purpose: validateStep5 scrolls to it
+       itself, and it is not a field the applicant can fill in. */
+    function revealFirstError(step) {
+      var scope = document.getElementById('step' + step);
+      if (!scope) return;
+      var first = scope.querySelector('.input-error, .radio-group.error, .upload-zone.blank-error');
+      if (!first) return;
+      if (first.scrollIntoView) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Radio groups and upload zones are not focusable; reach for the control.
+      var focusable = first.matches('input, select, textarea') ? first : first.querySelector('input, select, textarea');
+      if (focusable && focusable.type !== 'file') {
+        setTimeout(function () { try { focusable.focus({ preventScroll: true }); } catch (e) { focusable.focus(); } }, 320);
+      }
+    }
 
     function populateReview() {
       setRv('rv_name', val('f_name'));
@@ -2069,7 +2099,7 @@
       // Next / Previous / Edit navigation
       document.querySelectorAll('[data-next]').forEach(b => b.addEventListener('click', function () {
         var vfn = STEP_VALIDATORS[currentStep];
-        if (vfn && !vfn()) return;
+        if (vfn && !vfn()) { revealFirstError(currentStep); return; }
         showStep(parseInt(b.dataset.next));
       }));
       document.querySelectorAll('[data-prev]').forEach(b => b.addEventListener('click', () => showStep(parseInt(b.dataset.prev))));
@@ -2361,7 +2391,18 @@
         var step = parseInt(d.step, 10);
         if (!step || step < 1) step = 1;
         if (step > 7) step = 7;
-        showStep(step);
+
+        // Restoring must not drop the applicant past a step they never
+        // completed. Walk up to the saved step and stop at the first one that
+        // still fails; the validator marks up what is missing on the way, so
+        // they land looking at the reason. Step 4 always stops a resume from
+        // beyond it, because the uploads genuinely are gone.
+        var target = step;
+        for (var s = 1; s < step; s++) {
+          var check = (typeof STEP_VALIDATORS !== 'undefined') && STEP_VALIDATORS[s];
+          if (check && !check()) { target = s; break; }
+        }
+        showStep(target);
 
         // Past the upload step the applicant needs to know the files are gone.
         if (step > 4) {
