@@ -87,9 +87,27 @@ class InjectPageLoader
           <span class="gc-loader-sr">Loading GoCare Training Institute</span>
           <div class="gc-loader-inner" aria-hidden="true">
             <img src="{$logo}" alt="" width="148" height="48" decoding="async" fetchpriority="high">
-            <svg viewBox="0 0 240 60" preserveAspectRatio="xMidYMid meet" focusable="false" aria-hidden="true">
-              <path class="gc-loader-base" d="M0,32 H240"></path>
-              <path class="gc-loader-line" d="M0,32 L72,32 L82,10 L94,54 L104,24 L112,32 L240,32"></path>
+            <svg viewBox="0 0 240 132" preserveAspectRatio="xMidYMid meet" focusable="false" aria-hidden="true">
+              <g class="gcb">
+                <path class="gcb-ground" pathLength="100" d="M14,120 H226"></path>
+                <path class="gcb-wing gcb-wing--l" pathLength="100" d="M22,106 V74 H60"></path>
+                <path class="gcb-wing gcb-wing--r" pathLength="100" d="M218,106 V74 H180"></path>
+                <path class="gcb-steps" pathLength="100" d="M44,113 H196 M52,106 H188"></path>
+                <path class="gcb-col gcb-col--1" pathLength="100" d="M72,105 V61"></path>
+                <path class="gcb-col gcb-col--2" pathLength="100" d="M96,105 V61"></path>
+                <path class="gcb-col gcb-col--3" pathLength="100" d="M144,105 V61"></path>
+                <path class="gcb-col gcb-col--4" pathLength="100" d="M168,105 V61"></path>
+                <path class="gcb-lintel" pathLength="100" d="M54,59 H186"></path>
+                <path class="gcb-roof" pathLength="100" d="M50,53 L120,20 L190,53"></path>
+                <circle class="gcb-clock" cx="120" cy="38" r="6" pathLength="100"></circle>
+                <rect class="gcb-win" x="26" y="84" width="8" height="12" rx="1.5"></rect>
+                <rect class="gcb-win" x="37" y="84" width="8" height="12" rx="1.5"></rect>
+                <rect class="gcb-win" x="48" y="84" width="8" height="12" rx="1.5"></rect>
+                <rect class="gcb-win" x="184" y="84" width="8" height="12" rx="1.5"></rect>
+                <rect class="gcb-win" x="195" y="84" width="8" height="12" rx="1.5"></rect>
+                <rect class="gcb-win" x="206" y="84" width="8" height="12" rx="1.5"></rect>
+                <rect class="gcb-door" x="106" y="78" width="28" height="28" rx="2"></rect>
+              </g>
             </svg>
             <p class="gc-loader-word">Train with the experts</p>
           </div>
