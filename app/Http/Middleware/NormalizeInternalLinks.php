@@ -38,6 +38,20 @@ class NormalizeInternalLinks
             $content,
         );
 
+        // The two rules above only know the slugs they were given, which left
+        // pages like industrial-attachment.html and alumni-network.html - and
+        // every index.html - pointing at files that no longer exist. Routes are
+        // extensionless, so any remaining .html link is a static-site leftover.
+        // Anchored to href= on purpose: the rules above match a bare quoted
+        // slug, which would rewrite an unrelated attribute if one ever matched.
+        $content = preg_replace_callback(
+            '~(?P<attr>\bhref=)(?P<quote>["\'])(?!https?:|//|mailto:|tel:|data:|#)(?:\.\./|/)?(?P<path>[a-z0-9][a-z0-9/-]*)\.html(?P<suffix>[#?][^"\']*)?(?P=quote)~i',
+            static fn (array $match): string => $match['attr'].$match['quote']
+                .(strtolower($match['path']) === 'index' ? '/' : '/'.$match['path'])
+                .($match['suffix'] ?? '').$match['quote'],
+            $content,
+        );
+
         // Nested Laravel routes break relative static assets (e.g. /blog/slug + images/foo.jpg).
         $content = preg_replace_callback(
             '~(?P<attr>\b(?:href|src|action|poster)=)(?P<quote>["\'])(?!https?:|//|mailto:|tel:|data:|#|/)(?P<path>(?:\.\./)*(?:images|docs|js|css|fonts)/[^"\']+)(?P=quote)~i',

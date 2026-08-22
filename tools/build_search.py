@@ -16,6 +16,16 @@ MAX_TEXT = 3200   # cap main-content chars per page to keep the index lean
 
 VOID = {"meta","link","img","br","input","hr","source","area","base","col","embed","param","track","wbr"}
 
+
+def to_route(path):
+    """Crawl path -> the URL Laravel actually serves.
+
+    The site is no longer a folder of .html files; routes are extensionless and
+    absolute. Emitting "about.html" here is what made every search result 404.
+    """
+    u = re.sub(r"\.html$", "", path, flags=re.I).strip("/")
+    return "/" if u in ("", "index") else "/" + u
+
 class Extractor(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -124,7 +134,9 @@ def main():
                 cat = "Blog"
             else:
                 cat = "Other"
-            index.append({"u":url,"t":title,"d":desc,"h":headings,"b":body,"c":cat})
+            # `url` stays the crawl path above so the facet rules keep working;
+            # only the record carries the route.
+            index.append({"u":to_route(url),"t":title,"d":desc,"h":headings,"b":body,"c":cat})
     index.sort(key=lambda r: r["u"])
     out = "window.__GOCARE_SEARCH__=" + json.dumps(index, ensure_ascii=False, separators=(",",":")) + ";"
     outpath = os.path.join(SITE, "search-index.js")

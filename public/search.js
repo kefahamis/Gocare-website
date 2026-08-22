@@ -10,15 +10,11 @@
   }
 
   // Path prefix so root-relative index URLs resolve from sub-folders (courses/, schools/, …).
-  function basePrefix() {
-    var s = document.getElementById("gc-search-js") ||
-            document.querySelector('script[src$="search.js"]');
-    if (s) {
-      var src = s.getAttribute("src") || "";
-      return src.replace(/search\.js.*$/, ""); // "" or "../" (or deeper)
-    }
-    // Fallback: derive from current path depth under the site root is unknown, assume same dir.
-    return "";
+  function resultHref(u) {
+    u = String(u || "").replace(/\.html$/i, "");
+    if (!u || u === "index" || u === "/index") return "/";
+    if (/^(?:https?:)?\/\//i.test(u) || u.charAt(0) === "#") return u;
+    return "/" + u.replace(/^\/+/, "");
   }
 
   var CSS = "" +
@@ -93,7 +89,6 @@
     if (!inner) return; // no sub-bar on this page
 
     injectCSS();
-    var PREFIX = basePrefix();
 
     // Precompute lowercase fields once.
     DATA.forEach(function (r) {
@@ -194,7 +189,7 @@
       displayed.forEach(function (r, i) {
         var title = highlight(esc(r.t), lastTerms);
         var snip = highlight(esc(snippet(r.b || r.d || "", lastTerms, 150)), lastTerms);
-        html += '<a class="gc-res" href="' + PREFIX + esc(r.u) + '" data-i="' + i + '">' +
+        html += '<a class="gc-res" href="' + esc(resultHref(r.u)) + '" data-i="' + i + '">' +
           '<div class="gc-res-top"><span class="gc-res-title">' + title + '</span>' +
           '<span class="gc-res-chip">' + esc(r.c) + '</span></div>' +
           '<div class="gc-res-snip">' + snip + "</div></a>";
