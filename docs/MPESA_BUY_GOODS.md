@@ -238,6 +238,43 @@ matches one this site generated, which is the same bar the STK callback sets wit
 `CheckoutRequestID`. If you want a stronger guarantee, put an unguessable segment in
 `MPESA_STATUS_RESULT_URL` and match the route accordingly.
 
+### Testing it on live
+
+`php artisan mpesa:diagnose` walks both paths and stops at the first stage that fails.
+Run it from the application root on the server, after `php artisan config:clear`.
+
+```bash
+# 1. Config, connectivity, token, status config, credential, ResultURL reachability.
+#    Safe to run any time -- it sends nothing to a customer and costs nothing.
+php artisan mpesa:diagnose
+
+# 2. Add a real STK prompt for KES 1 to your own phone.
+php artisan mpesa:diagnose --phone=07xxxxxxxx
+
+# 3. Pay the till KES 1 from your own M-Pesa menu, then query the code from the SMS.
+php artisan mpesa:diagnose --code=SHK3XY8ZT9
+```
+
+Step 6 prints the resolved `MPESA_STATUS_*` values and says `OFF` when the query is not
+configured -- that is the fallback above, not a failure, but it means typed codes are
+only ever recorded. Step 7 builds the security credential through the service itself,
+because a missing certificate is swallowed in the request path and would otherwise show
+up only as applicants stuck on `awaiting_verification`. Step 8 POSTs an unmatched result
+to `MPESA_STATUS_RESULT_URL`: a 200 proves Safaricom can deliver there, a 419 means the
+CSRF exemption is missing and a 404 means the URL and the route disagree.
+
+Step 9 only gets Daraja's acknowledgement. The verdict arrives asynchronously, so watch
+for it:
+
+```bash
+tail -f storage/logs/laravel.log | grep -i "Transaction Status"
+```
+
+`Invalid initiator information` means the operator name or password is wrong, or the
+operator does not hold the Transaction Status Query role. An invalid-party error means
+`IdentifierType` and `PartyA` disagree -- try `MPESA_STATUS_IDENTIFIER_TYPE=2` with the
+till number.
+
 ## 10. Idempotency
 
 Payments are retried by everyone: applicants tap "try again", and Safaricom re-delivers

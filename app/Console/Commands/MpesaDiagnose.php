@@ -12,9 +12,11 @@ class MpesaDiagnose extends Command
         {--phone= : Send a real STK push to this number}
         {--shortcode= : Override BusinessShortCode (and the password base)}
         {--party-b= : Override PartyB (the till customers pay to)}
-        {--type= : Override paybill|till}';
+        {--type= : Override paybill|till}
+        {--code= : Query this real M-Pesa confirmation code with Transaction Status}
+        {--reference= : Occasion sent with --code (defaults to DIAG-HHMMSS)}';
 
-    protected $description = 'Check every stage of the M-Pesa STK push path';
+    protected $description = 'Check every stage of the M-Pesa STK push and manual-verification paths';
 
     public function handle(): int
     {
@@ -99,23 +101,126 @@ class MpesaDiagnose extends Command
 
         // 5. Real STK push, only when asked.
         $phone = $this->option('phone');
-        if (! $phone) {
-            $this->line('');
-            $this->comment('Everything up to the STK push is healthy.');
-            $this->comment('Re-run with --phone=07xxxxxxxx to send a real prompt.');
+
+        if ($phone) {
+            $this->info('5. STK push to '.$phone);
+            try {
+                $out = app(MpesaService::class)->stkPush($phone, 1, 'DIAG-'.date('His'), 'Diagnostic');
+                $this->line('   OK    '.json_encode($out));
+            } catch (\Throwable $e) {
+                $this->error('   FAIL  '.$e->getMessage());
+
+                return self::FAILURE;
+            }
+        } else {
+            $this->info('5. STK push');
+            $this->line('   SKIP  re-run with --phone=07xxxxxxxx to send a real prompt');
+        }
+
+        // 6. The manual-payment path: confirming a typed code with the
+        // Transaction Status API. Everything above is shared with the STK push,
+        // so a healthy push proves nothing about this.
+        $this->info('6. Transaction Status config');
+
+        $status = config('mpesa.status');
+        $cert = (string) $status['certificate_path'];
+
+        $this->table(['key', 'value'], [
+            ['initiator',        (string) ($status['initiator'] ?: '(EMPTY)')],
+            ['initiator_pass',   $this->mask((string) $status['initiator_password'])],
+            ['security_cred',    $this->mask((string) $status['security_credential'])],
+            ['certificate',      $cert.(is_readable($cert) ? '   (readable)' : '   (NOT READABLE)')],
+            ['identifier_type',  (string) $status['identifier_type']],
+            ['party_a',          (string) config('mpesa.shortcode').'  (store / head office number)'],
+            ['result_url',       (string) $status['result_url']],
+            ['timeout_url',      (string) $status['timeout_url']],
+        ]);
+
+        $mpesa = app(MpesaService::class);
+
+        // The same guard confirmManualPayment() consults. Failing it is not an
+        // error -- it is the documented "record the code, verify nothing"
+        // fallback -- but it is never what you want on a live site.
+        if (! $mpesa->statusQueryConfigured()) {
+            $this->warn('   OFF   typed codes are only recorded, never verified.');
+            $this->warn('   Needs MPESA_STATUS_INITIATOR, an initiator password or a');
+            $this->warn('   pre-encrypted MPESA_STATUS_SECURITY_CREDENTIAL, and an https://');
+            $this->warn('   MPESA_STATUS_RESULT_URL. Then: php artisan config:clear');
 
             return self::SUCCESS;
         }
 
-        $this->info('5. STK push to '.$phone);
+        // Build the credential through the service itself rather than repeating
+        // its logic: a missing or malformed certificate has to fail loudly here,
+        // because in the request path that exception is swallowed and the
+        // applicant is simply told their payment was recorded.
+        $this->info('7. Security credential');
         try {
-            $out = app(MpesaService::class)->stkPush($phone, 1, 'DIAG-'.date('His'), 'Diagnostic');
-            $this->line('   OK    '.json_encode($out));
+            $credential = (new \ReflectionMethod(MpesaService::class, 'securityCredential'))->invoke($mpesa);
+            $this->line('   OK    encrypted, '.strlen($credential).' chars');
+        } catch (\Throwable $e) {
+            $this->error('   FAIL  '.$e->getMessage());
+            $this->warn('   Put the Safaricom production certificate at '.$cert);
+            $this->warn('   or set MPESA_STATUS_SECURITY_CREDENTIAL to a pre-encrypted value.');
+
+            return self::FAILURE;
+        }
+
+        // 8. The result only ever arrives on the ResultURL, so prove it answers
+        // before blaming Safaricom for a verdict that never came back. An
+        // unmatched conversation id is accepted and ignored by design.
+        $this->info('8. Result URL reachability');
+        try {
+            $probe = Http::timeout(20)->acceptJson()->post((string) $status['result_url'], [
+                'Result' => ['OriginatorConversationID' => 'diagnostic-probe-'.date('His')],
+            ]);
+
+            if ($probe->status() === 200) {
+                $this->line('   OK    HTTP 200 '.trim($probe->body()));
+            } else {
+                $this->error('   FAIL  HTTP '.$probe->status().' -- Safaricom cannot deliver the result here.');
+                $this->line('   '.trim($probe->body()));
+                $this->warn('   A 419 means the CSRF exemption is missing; a 404 means the URL');
+                $this->warn('   and the route in routes/web.php disagree.');
+
+                return self::FAILURE;
+            }
         } catch (\Throwable $e) {
             $this->error('   FAIL  '.$e->getMessage());
 
             return self::FAILURE;
         }
+
+        // 9. A real query, only when asked. Needs a genuine confirmation code
+        // from a payment that actually hit the till.
+        $code = $this->option('code');
+
+        if (! $code) {
+            $this->line('');
+            $this->comment('Everything up to the status query is healthy.');
+            $this->comment('Pay the till KES 1, then re-run with --code=<code from the SMS>.');
+
+            return self::SUCCESS;
+        }
+
+        $this->info('9. Transaction Status query for '.strtoupper($code));
+        try {
+            $out = $mpesa->transactionStatus($code, $this->option('reference') ?: 'DIAG-'.date('His'));
+            $this->line('   OK    '.json_encode($out));
+        } catch (\Throwable $e) {
+            $this->error('   FAIL  '.$e->getMessage());
+            $this->warn('   "Invalid initiator information" means the operator name or password');
+            $this->warn('   is wrong, or the operator lacks the Transaction Status Query role.');
+            $this->warn('   An invalid-party error means IdentifierType and PartyA disagree:');
+            $this->warn('   try MPESA_STATUS_IDENTIFIER_TYPE=2 with the till number instead.');
+
+            return self::FAILURE;
+        }
+
+        $this->line('');
+        $this->comment('Daraja only acknowledged. The verdict arrives asynchronously on the');
+        $this->comment('ResultURL -- watch for it with:');
+        $this->comment('   tail -f storage/logs/laravel.log | grep -i "Transaction Status"');
 
         return self::SUCCESS;
     }
