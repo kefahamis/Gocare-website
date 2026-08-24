@@ -125,11 +125,23 @@ class MpesaDiagnose extends Command
         $status = config('mpesa.status');
         $cert = (string) $status['certificate_path'];
 
+        // A pre-encrypted credential short-circuits securityCredential() before
+        // it ever opens the certificate, so an unreadable file is not a fault
+        // in that case -- reporting it as one sent the last debugging session
+        // hunting for a certificate that was never going to be used.
+        $preEncrypted = filled($status['security_credential'] ?? null);
+
+        if ($preEncrypted) {
+            $certNote = $cert.'   (not needed -- using MPESA_STATUS_SECURITY_CREDENTIAL)';
+        } else {
+            $certNote = $cert.(is_readable($cert) ? '   (readable)' : '   (NOT READABLE)');
+        }
+
         $this->table(['key', 'value'], [
             ['initiator',        (string) ($status['initiator'] ?: '(EMPTY)')],
             ['initiator_pass',   $this->mask((string) $status['initiator_password'])],
             ['security_cred',    $this->mask((string) $status['security_credential'])],
-            ['certificate',      $cert.(is_readable($cert) ? '   (readable)' : '   (NOT READABLE)')],
+            ['certificate',      $certNote],
             ['identifier_type',  (string) $status['identifier_type']],
             ['party_a',          (string) config('mpesa.shortcode').'  (store / head office number)'],
             ['result_url',       (string) $status['result_url']],
@@ -160,8 +172,16 @@ class MpesaDiagnose extends Command
             $this->line('   OK    encrypted, '.strlen($credential).' chars');
         } catch (\Throwable $e) {
             $this->error('   FAIL  '.$e->getMessage());
-            $this->warn('   Put the Safaricom production certificate at '.$cert);
-            $this->warn('   or set MPESA_STATUS_SECURITY_CREDENTIAL to a pre-encrypted value.');
+
+            if ($preEncrypted) {
+                $this->warn('   MPESA_STATUS_SECURITY_CREDENTIAL is set, so the certificate is not');
+                $this->warn('   involved -- the supplied value itself was rejected.');
+            } else {
+                $this->warn('   Put the Safaricom production certificate at '.$cert);
+                $this->warn('   or set MPESA_STATUS_SECURITY_CREDENTIAL to a pre-encrypted value.');
+                $this->warn('   A ~344-character value ending in "==" is already encrypted: it');
+                $this->warn('   belongs in MPESA_STATUS_SECURITY_CREDENTIAL, not in the password.');
+            }
 
             return self::FAILURE;
         }
