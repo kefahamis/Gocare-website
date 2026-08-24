@@ -523,6 +523,11 @@ class ApplicationController extends Controller
                 'reference' => $application->reference,
                 'code' => $application->mpesa_receipt,
                 'reason' => $failure,
+                // Safaricom's own verdict, so diagnosing this is one grep
+                // rather than cross-referencing the raw result logged above.
+                'result_code' => (string) ($result['ResultCode'] ?? ''),
+                'result_desc' => (string) ($result['ResultDesc'] ?? ''),
+                'transaction_status' => (string) ($parameters['TransactionStatus'] ?? ''),
             ]);
 
             return response()->json(['ResultCode' => 0, 'ResultDesc' => 'Accepted']);
@@ -571,6 +576,17 @@ class ApplicationController extends Controller
     }
 
     /**
+     * Transaction Status result codes that mean Safaricom rejected our query
+     * rather than the applicant's code.
+     *
+     *   21   The initiator is not allowed to initiate this request
+     *        (the operator lacks the Transaction Status permission).
+     *   2001 The initiator information is invalid
+     *        (wrong initiator name, or a stale security credential).
+     */
+    private const STATUS_CONFIG_RESULT_CODES = ['21', '2001'];
+
+    /**
      * Why a typed code cannot be accepted as payment, or null when it checks out.
      */
     private function manualPaymentRejection(
@@ -581,6 +597,17 @@ class ApplicationController extends Controller
         float $expectedAmount,
     ): ?string {
         if ($resultCode !== '0') {
+            // Codes where Safaricom refused the REQUEST, not the transaction:
+            // the initiator lacks the Transaction Status permission (21), or
+            // its credentials were rejected (2001). The applicant's code was
+            // never looked up -- Safaricom echoes a placeholder TransactionID
+            // in these results -- so telling them to re-read their SMS blames
+            // them for our configuration. They keep awaiting_verification
+            // either way; only the wording and the trail change.
+            if (in_array($resultCode, self::STATUS_CONFIG_RESULT_CODES, true)) {
+                return 'We could not verify this code automatically just yet. Your payment is recorded and our team will confirm it shortly.';
+            }
+
             return 'We could not find this confirmation code on M-Pesa. Please check the code on your message.';
         }
 
