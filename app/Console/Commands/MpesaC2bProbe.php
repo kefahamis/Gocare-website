@@ -23,7 +23,7 @@ class MpesaC2bProbe extends Command
         {--validation= : Validation URL to register (default: /mpesa/c2b/validation on the callback host)}
         {--shortcode= : Override the shortcode to register against}
         {--response-type=Completed : Completed (accept when validation is unreachable) or Cancelled}
-        {--version=1 : registerurl API version, 1 or 2}
+        {--api-version=1 : registerurl API version, 1 or 2 (--version is reserved by the console)}
         {--force : Register without asking for confirmation first}';
 
     protected $description = 'Ask Safaricom whether C2B URL registration is available for this shortcode';
@@ -33,7 +33,7 @@ class MpesaC2bProbe extends Command
         $live = in_array(strtolower((string) config('mpesa.env')), ['production', 'live'], true);
         $base = $live ? 'https://api.safaricom.co.ke' : 'https://sandbox.safaricom.co.ke';
 
-        $version = $this->option('version') === '2' ? 'v2' : 'v1';
+        $version = $this->option('api-version') === '2' ? 'v2' : 'v1';
 
         // For Buy Goods the C2B shortcode is the store / head office number,
         // the same one the STK password is built from -- not the till.
@@ -158,7 +158,7 @@ class MpesaC2bProbe extends Command
             $this->warn('   Try: --shortcode=' . config('mpesa.till_number'));
         } elseif ($version === 'v1') {
             $this->warn('   Unrecognised failure. Some accounts are on the v2 endpoint --');
-            $this->warn('   re-run with --version=2 before concluding anything.');
+            $this->warn('   re-run with --api-version=2 before concluding anything.');
         } else {
             $this->warn('   Unrecognised failure. Quote the HTTP body above to Safaricom support.');
         }
