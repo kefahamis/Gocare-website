@@ -6,6 +6,7 @@ use App\Mail\ContactAutoReply;
 use App\Mail\ContactMessageReceived;
 use App\Models\ContactMessage;
 use App\Models\ContactSetting;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -70,12 +71,19 @@ class ContactController extends Controller
         return null;
     }
 
-    public function store(Request $request): RedirectResponse
+    /**
+     * Answers JSON to fetch/XHR and a redirect to a plain form post.
+     *
+     * The form works without JavaScript -- the AJAX handler is an enhancement
+     * layered on top, not a replacement -- so both shapes have to be returned
+     * from the one action.
+     */
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $settings = ContactSetting::resolved();
 
         if ($settings && ! $settings->enabled) {
-            return back()->with('error', 'The contact form is currently closed. Please try again later.');
+            return $this->respond($request, false, 'The contact form is currently closed. Please try again later.');
         }
 
         if ($reason = $this->spamReason($request, $settings)) {
@@ -87,7 +95,7 @@ class ContactController extends Controller
             // Deliberately the SAME response a real send gets. Telling a bot
             // which defence caught it is telling it how to get past next time,
             // and a false positive at least does not look broken to a human.
-            return back()->with('success', $settings ? $settings->successMessage() : ContactSetting::DEFAULT_SUCCESS);
+            return $this->respond($request, true, $settings ? $settings->successMessage() : ContactSetting::DEFAULT_SUCCESS);
         }
 
         $data = $request->validate([
@@ -139,6 +147,27 @@ class ContactController extends Controller
             }
         }
 
-        return back()->with('success', $settings ? $settings->successMessage() : ContactSetting::DEFAULT_SUCCESS);
+        return $this->respond($request, true, $settings ? $settings->successMessage() : ContactSetting::DEFAULT_SUCCESS);
+    }
+
+    /**
+     * One outcome, two shapes.
+     *
+     * A fresh `started_at` rides along on every JSON reply: the page is not
+     * reloading, so without it a second message would be checked against the
+     * timestamp minted when the page first loaded -- and would be rejected as
+     * a stale form once that passed two hours.
+     */
+    private function respond(Request $request, bool $ok, string $message): RedirectResponse|JsonResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => $ok,
+                'message' => $message,
+                'started_at' => Crypt::encryptString((string) time()),
+            ], $ok ? 200 : 422);
+        }
+
+        return back()->with($ok ? 'success' : 'error', $message);
     }
 }

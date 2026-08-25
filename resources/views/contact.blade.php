@@ -264,12 +264,88 @@
               @if (session('success'))
                 <div style="text-align:center;padding:24px 0;color:var(--p)"><h3>{{ session('success') }}</h3></div>
               @endif
+              @if (session('error'))
+                <div style="text-align:center;padding:16px 0;color:#c0392b"><strong>{{ session('error') }}</strong></div>
+              @endif
+
+              {{-- Written by the AJAX handler; stays empty without JavaScript,
+                   where the session blocks above do the same job. --}}
+              <div id="contactStatus" role="status" aria-live="polite" style="display:none;margin-bottom:14px;font-weight:600"></div>
               <div class="form-group"><input type="text" name="name" class="form-control" placeholder="Full Name" value="{{ old('name') }}" required></div>
               <div class="form-group"><input type="email" name="email" class="form-control" placeholder="Email Address" value="{{ old('email') }}" required></div>
               <div class="form-group"><input type="text" name="phone" class="form-control" placeholder="Phone Number" value="{{ old('phone') }}"></div>
               <div class="form-group"><textarea name="message" class="form-control" placeholder="How can we help you?" rows="3" required>{{ old('message') }}</textarea></div>
-              <button type="submit" class="btn btn-primary" style="width:100%">Send Message <i data-lucide="send"></i></button>
+              <button type="submit" class="btn btn-primary" style="width:100%" id="contactSubmit">Send Message <i data-lucide="send"></i></button>
             </form>
+
+            <script>
+            /* Progressive enhancement: without this the form posts normally and
+               the controller answers with a redirect. With it, the same action
+               answers JSON -- and because the SMTP settings are applied on every
+               request, an AJAX send uses whatever is configured in the admin
+               exactly as a normal post would. */
+            (function () {
+              var form = document.getElementById('contactForm');
+              var btn = document.getElementById('contactSubmit');
+              var status = document.getElementById('contactStatus');
+              if (!form || !btn || !status) return;
+
+              var defaultLabel = btn.innerHTML;
+
+              function show(message, ok) {
+                status.style.display = 'block';
+                status.style.color = ok ? 'var(--p)' : '#c0392b';
+                status.textContent = message;
+              }
+
+              form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                status.style.display = 'none';
+                btn.disabled = true;
+                btn.innerHTML = 'Sending&hellip;';
+
+                try {
+                  var res = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                      'Accept': 'application/json',
+                      'X-Requested-With': 'XMLHttpRequest',
+                      'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: new FormData(form)
+                  });
+
+                  var data = await res.json();
+
+                  if (res.ok && data.ok) {
+                    show(data.message || 'Your message has been sent.', true);
+                    form.reset();
+                  } else if (res.status === 422 && data.errors) {
+                    // Laravel's validation shape: show the first problem rather
+                    // than a generic failure the visitor cannot act on.
+                    var first = Object.keys(data.errors)[0];
+                    show(data.errors[first][0], false);
+                  } else {
+                    show(data.message || 'Your message could not be sent. Please try again.', false);
+                  }
+
+                  // The page is not reloading, so refresh the signed timestamp
+                  // or a second message would be judged against the first one.
+                  if (data.started_at) {
+                    var field = form.querySelector('input[name="started_at"]');
+                    if (field) field.value = data.started_at;
+                  }
+                } catch (err) {
+                  console.error('[contact]', err);
+                  show('A network error occurred. Please try again.', false);
+                } finally {
+                  btn.disabled = false;
+                  btn.innerHTML = defaultLabel;
+                  if (window.lucide) lucide.createIcons();
+                }
+              });
+            })();
+            </script>
           </div>
         </div>
       </div>
