@@ -1789,6 +1789,17 @@
           return;
         }
 
+        // No prompt is sent when a payment from this number is already being
+        // confirmed. Saying "check your phone" there sends the applicant
+        // looking for a prompt that does not exist.
+        if (data.payment_status === 'awaiting_verification') {
+          setMpesaStatus('#1565c0', '&#x23F3; ' + data.message);
+          btn.innerHTML = '<i data-lucide="clock"></i> Awaiting confirmation';
+          if (window.lucide) lucide.createIcons();
+          refreshPaymentGate();
+          return;
+        }
+
         setMpesaStatus('#1565c0', '&#x23F3; STK Push sent to +' + phone + '. Check your phone and enter your M-Pesa PIN to complete payment.');
         btn.innerHTML = '<i data-lucide="smartphone"></i> Check your phone';
         if (window.lucide) lucide.createIcons();

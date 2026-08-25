@@ -478,8 +478,14 @@ class ApplicationController extends Controller
             return null;
         }
 
+        // A payment in flight always blocks another prompt; a completed one
+        // only does so when the site enforces one application per phone.
+        $blocking = config('gocare.one_application_per_phone')
+            ? ['paid', 'awaiting_verification']
+            : ['awaiting_verification'];
+
         return Application::query()
-            ->whereIn('payment_status', ['paid', 'awaiting_verification'])
+            ->whereIn('payment_status', $blocking)
             ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
             // Compare on the normalised tail rather than the stored string,
             // which historically varies in format.
