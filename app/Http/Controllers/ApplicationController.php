@@ -506,11 +506,42 @@ class ApplicationController extends Controller
 
         $parameters = $this->statusResultParameters($result);
 
+        // The result must be about the code the applicant typed. Matching is by
+        // conversation id, which is sound, but this is the cheap second lock:
+        // a mismatch means the verdict describes some other transaction, and
+        // accepting it would mark the fee paid on evidence from elsewhere.
+        $returnedReceipt = strtoupper(trim((string) ($parameters['ReceiptNo'] ?? '')));
+        $claimedReceipt = strtoupper(trim((string) $application->mpesa_receipt));
+
+        // Only meaningful on a successful lookup: a refused query (21, 2001)
+        // carries no real receipt, and manualPaymentRejection() reports those
+        // far more usefully than a generic mismatch would.
+        $lookupSucceeded = (string) ($result['ResultCode'] ?? '') === '0';
+
+        if ($lookupSucceeded && $returnedReceipt !== '' && $claimedReceipt !== '' && $returnedReceipt !== $claimedReceipt) {
+            $application->update([
+                'payment_note' => 'We could not confirm this code automatically. Your payment is recorded and our team will confirm it shortly.',
+            ]);
+
+            Log::warning('Transaction status result is for a different receipt than the one claimed', [
+                'reference' => $application->reference,
+                'claimed' => $claimedReceipt,
+                'returned' => $returnedReceipt,
+            ]);
+
+            return response()->json(['ResultCode' => 0, 'ResultDesc' => 'Accepted']);
+        }
+
         $failure = $this->manualPaymentRejection(
             resultCode: (string) ($result['ResultCode'] ?? ''),
             transactionStatus: (string) ($parameters['TransactionStatus'] ?? ''),
             amount: isset($parameters['Amount']) ? (float) $parameters['Amount'] : null,
-            creditParty: (string) ($parameters['CreditPartyName'] ?? ''),
+            // Safaricom is not consistent about which key carries the payee.
+            creditParty: (string) (
+                $parameters['CreditPartyName']
+                ?? $parameters['ReceiverPartyPublicName']
+                ?? ''
+            ),
             expectedAmount: (float) $application->amount,
         );
 
@@ -528,6 +559,11 @@ class ApplicationController extends Controller
                 'result_code' => (string) ($result['ResultCode'] ?? ''),
                 'result_desc' => (string) ($result['ResultDesc'] ?? ''),
                 'transaction_status' => (string) ($parameters['TransactionStatus'] ?? ''),
+                // Which fields Safaricom actually sent. The payee and amount
+                // checks fail closed, so if either key is missing every code
+                // lands in manual review -- this is how you see that, rather
+                // than guessing at a silent backlog.
+                'parameter_keys' => array_keys($parameters),
             ]);
 
             return response()->json(['ResultCode' => 0, 'ResultDesc' => 'Accepted']);
@@ -540,7 +576,10 @@ class ApplicationController extends Controller
             ->update([
                 'payment_status' => 'paid',
                 'payment_note' => null,
-                'mpesa_receipt' => $parameters['ReceiptNo'] ?? $application->mpesa_receipt,
+                // Equal to the claimed code by the guard above, or absent from
+                // the result entirely -- in which case the applicant's own
+                // code stands rather than being quietly replaced.
+                'mpesa_receipt' => $returnedReceipt !== '' ? $returnedReceipt : $application->mpesa_receipt,
             ]);
 
         if ($claimed === 0) {
@@ -622,16 +661,32 @@ class ApplicationController extends Controller
             (string) config('mpesa.till_number'),
         ]);
 
-        if ($ourNumbers !== [] && $creditParty !== '') {
-            $paidToUs = array_filter($ourNumbers, fn (string $number) => str_contains($creditParty, $number));
-
-            if ($paidToUs === []) {
-                return 'This payment was not made to our M-Pesa number. Please check the till number and try again.';
-            }
+        // Fail CLOSED on a missing payee. Transaction Status answers for any
+        // valid M-Pesa code, not only ones paid to us, so the payee is the
+        // ONLY thing tying a code to this organisation. Skipping the check
+        // when the field is absent -- as this did -- accepted any code the
+        // applicant had ever received, including payments made to someone
+        // else entirely.
+        if ($ourNumbers === [] || $creditParty === '') {
+            return 'We could not confirm this payment was made to our M-Pesa number. Your payment is recorded and our team will confirm it shortly.';
         }
 
-        if ($expectedAmount > 0 && $amount !== null && $amount + 0.001 < $expectedAmount) {
-            return 'The amount paid (KES ' . number_format($amount) . ') is less than the application fee of KES ' . number_format($expectedAmount) . '.';
+        $paidToUs = array_filter($ourNumbers, fn (string $number) => str_contains($creditParty, $number));
+
+        if ($paidToUs === []) {
+            return 'This payment was not made to our M-Pesa number. Please check the till number and try again.';
+        }
+
+        // Same reasoning for the amount: an absent Amount used to mean "no
+        // amount check at all", so a KES 1 payment to our till passed.
+        if ($expectedAmount > 0) {
+            if ($amount === null) {
+                return 'We could not confirm the amount paid. Your payment is recorded and our team will confirm it shortly.';
+            }
+
+            if ($amount + 0.001 < $expectedAmount) {
+                return 'The amount paid (KES ' . number_format($amount) . ') is less than the application fee of KES ' . number_format($expectedAmount) . '.';
+            }
         }
 
         return null;
