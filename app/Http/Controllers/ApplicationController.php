@@ -10,7 +10,8 @@ use App\Services\MpesaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Cache;
+
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -35,6 +36,30 @@ class ApplicationController extends Controller
         }
 
         $application = $this->currentApplication($request);
+
+        // A payment already settled on THIS phone, on some other application
+        // row. currentApplication() is session-scoped, so a new browser, an
+        // incognito window or cleared cookies used to hand the same person a
+        // fresh row and let them pay all over again. Resume the paid one
+        // instead of taking a second payment for it.
+        $settled = $this->settledApplicationForPhone($request->input('phone'), $application?->id);
+
+        if ($settled) {
+            $request->session()->put('application_reference', $settled->reference);
+
+            Log::info('Resumed a settled application for a returning phone number', [
+                'reference' => $settled->reference,
+                'payment_status' => $settled->payment_status,
+            ]);
+
+            return response()->json([
+                'message' => 'paid' === $settled->payment_status
+                    ? 'This phone number has already paid an application fee. Continuing that application.'
+                    : 'A payment from this phone number is already being confirmed. Continuing that application.',
+                'reference' => $settled->reference,
+                'payment_status' => $settled->payment_status,
+            ]);
+        }
 
         // Paying twice is never the intent: a double click after a confirmed
         // payment must not push again or open a second application.
@@ -80,6 +105,22 @@ class ApplicationController extends Controller
             $request->session()->put('application_reference', $reference);
         }
 
+        // One live prompt per phone. Two taps used to put two prompts on the
+        // handset, and an applicant who entered a PIN on both was charged
+        // twice -- the second callback was ignored as a duplicate, so the money
+        // left their account with nothing to show for it. Cache::add is atomic,
+        // so the second tap loses the race rather than both winning. The lock
+        // spans a prompt's own lifetime.
+        $promptLock = 'stk-prompt:' . $this->phoneKey($request->input('phone'));
+
+        if (! Cache::add($promptLock, true, now()->addSeconds(75))) {
+            return response()->json([
+                'message' => 'A payment request was just sent to this number. Check your phone, or wait a moment before trying again.',
+                'reference' => $application->reference,
+                'payment_status' => $application->payment_status,
+            ], 429);
+        }
+
         try {
             $result = $mpesa->stkPush($application->phone, $application->amount, $application->reference, 'Application Fee');
         } catch (\Exception $e) {
@@ -88,6 +129,10 @@ class ApplicationController extends Controller
                 'exception' => $e::class,
                 'at' => $e->getFile() . ':' . $e->getLine(),
             ]);
+
+            // No prompt reached the handset, so the applicant must be able to
+            // try again immediately rather than waiting out the lock.
+            Cache::forget($promptLock);
 
             $payload = [
                 'error' => 'Failed to initiate M-Pesa payment. Please try again.',
@@ -409,6 +454,40 @@ class ApplicationController extends Controller
      * The application this browser owns, from the session rather than the
      * request, so nobody can attach to someone else's reference.
      */
+    /**
+     * The last nine digits of a phone number.
+     *
+     * Numbers reach us as 0712..., 712..., +254712... and 254712..., and the
+     * column holds whatever was typed. The final nine digits are the part that
+     * is always the same, so they are what identifies a person here.
+     */
+    private function phoneKey(?string $phone): string
+    {
+        return substr(preg_replace('/\D/', '', (string) $phone) ?? '', -9);
+    }
+
+    /**
+     * An application on this phone whose fee is already settled or in flight,
+     * excluding the one the browser is already working on.
+     */
+    private function settledApplicationForPhone(?string $phone, ?int $excludeId): ?Application
+    {
+        $key = $this->phoneKey($phone);
+
+        if (strlen($key) < 9) {
+            return null;
+        }
+
+        return Application::query()
+            ->whereIn('payment_status', ['paid', 'awaiting_verification'])
+            ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
+            // Compare on the normalised tail rather than the stored string,
+            // which historically varies in format.
+            ->whereRaw("RIGHT(REPLACE(REPLACE(COALESCE(phone, ''), ' ', ''), '+', ''), 9) = ?", [$key])
+            ->latest('id')
+            ->first();
+    }
+
     private function currentApplication(Request $request): ?Application
     {
         $reference = $request->session()->get('application_reference');
