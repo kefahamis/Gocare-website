@@ -250,6 +250,17 @@
             <h4>Send us a Message</h4>
             <form id="contactForm" action="{{ route('contact.store') }}" method="POST">
               @csrf
+
+              {{-- Spam defences. The honeypot is hidden from people but not
+                   from bots, which fill every field they find; the timestamp is
+                   encrypted so it cannot be back-dated to fake a slow, human
+                   fill. Both are inert for anyone using the form normally.
+                   aria-hidden and tabindex keep them away from screen readers
+                   and the tab order, so a keyboard user never lands in one. --}}
+              <div style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden" aria-hidden="true">
+                <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" value=""></label>
+              </div>
+              <input type="hidden" name="started_at" value="{{ Crypt::encryptString((string) time()) }}">
               @if (session('success'))
                 <div style="text-align:center;padding:24px 0;color:var(--p)"><h3>{{ session('success') }}</h3></div>
               @endif
