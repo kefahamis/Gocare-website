@@ -1651,14 +1651,67 @@
 
     /* A confirmation can land minutes after the STK poll gives up, so keep a
        slow watch running while the applicant sits on the Payment step. */
+    /* Redraw the payment step itself -- status line and button -- so a
+       confirmation arriving after the fast poll gave up is not left sitting
+       behind a stale "No confirmation yet". The gate box was already updated
+       quietly; this is what the applicant is actually looking at. */
+    function refreshPaymentUi(status) {
+      var btn = document.getElementById('mpesaPromptBtn');
+      if (!btn) return;
+
+      if (status === 'paid') {
+        setMpesaStatus('#2e7d32', '&#10003; Payment received. Reference ' + mpesaReference + '.');
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="check"></i> Paid';
+      } else if (status === 'awaiting_verification') {
+        setMpesaStatus('#1565c0', '&#x23F3; Your payment is recorded and waiting for M-Pesa to confirm it. Reference ' + mpesaReference + '.');
+      } else if (status === 'failed') {
+        setMpesaStatus('#c0392b', '&#x26A0; Payment failed or was cancelled. Tap the button to try again, or pay manually below.');
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="send"></i> Send Payment Request';
+      } else {
+        setMpesaStatus('#b26a00', '&#x23F3; Still waiting for M-Pesa. This keeps checking on its own &mdash; leave the page open, or pay manually below.');
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="send"></i> Send Payment Request';
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    /* Runs for as long as the applicant is on the payment step: there is no
+       give-up. Paused while the tab is hidden so an abandoned tab does not
+       poll for ever, and re-checked the moment it comes back. */
     function startPayGateWatch() {
       if (payGateTimer || paymentConfirmed || !mpesaReference) return;
+
       payGateTimer = setInterval(async function () {
+        if (document.hidden) return;
+
         var status = await checkPaymentStatus();
-        if (status === 'paid') markPaid();
-        else if (status === 'awaiting_verification') setPayGate('waiting', PAY_GATE_WAITING);
+        if (!status) return;
+
+        if (status === 'paid') {
+          markPaid();
+          refreshPaymentUi('paid');
+          return;
+        }
+
+        if (status === 'awaiting_verification') setPayGate('waiting', PAY_GATE_WAITING);
+
+        // Only redraw the step once the fast poll has handed over, or the two
+        // would fight over the same status line for the first two minutes.
+        if (!mpesaPollTimer) refreshPaymentUi(status);
       }, 6000);
     }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden || !payGateTimer || paymentConfirmed) return;
+
+      checkPaymentStatus().then(function (status) {
+        if (status === 'paid') { markPaid(); refreshPaymentUi('paid'); }
+        else if (status && !mpesaPollTimer) refreshPaymentUi(status);
+      });
+    });
 
     function stopPayGateWatch() {
       if (payGateTimer) { clearInterval(payGateTimer); payGateTimer = null; }
@@ -2026,10 +2079,12 @@
         }
 
         if (elapsed >= 120) {
+          // Hand over to the slow watch rather than stopping: a payment
+          // confirmed at five minutes still updates this step in place.
           clearInterval(mpesaPollTimer);
           mpesaPollTimer = null;
-          setMpesaStatus('#b26a00', '&#x26A0; No confirmation yet. If you paid, quote reference ' + reference + '. Otherwise tap to try again.');
-          resetMpesaButton();
+          refreshPaymentUi(null);
+          startPayGateWatch();
         }
       }, 4000);
     }
