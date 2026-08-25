@@ -52,6 +52,13 @@ return [
         // Supply a pre-encrypted credential, or leave it blank to have the
         // initiator password encrypted with the Safaricom public certificate.
         'security_credential' => env('MPESA_STATUS_SECURITY_CREDENTIAL'),
+        // Shared secret forming part of the Result/Timeout URL path. Safaricom
+        // does not sign these callbacks either, and unlike C2B the URLs are
+        // sent per query rather than registered, so this can be rotated freely.
+        // While it is empty the legacy /mpesa/status/* paths keep working; set
+        // it AND the two URLs below together, and the unguarded paths close.
+        'token' => env('MPESA_STATUS_TOKEN'),
+
         'certificate_path' => env('MPESA_STATUS_CERTIFICATE_PATH')
             ?: storage_path('app/mpesa/production.cer'),
 

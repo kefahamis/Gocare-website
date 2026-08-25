@@ -148,6 +148,32 @@ class MpesaDiagnose extends Command
             ['timeout_url',      (string) $status['timeout_url']],
         ]);
 
+        // The one way the token guard bites: set, but the URLs still point at
+        // the unguarded paths. Safaricom would POST verdicts into a 404 and
+        // every manual verification would hang for ever.
+        $statusToken = (string) ($status['token'] ?? '');
+
+        if ($statusToken !== '') {
+            $mismatched = [];
+
+            foreach (['result_url' => 'MPESA_STATUS_RESULT_URL', 'timeout_url' => 'MPESA_STATUS_TIMEOUT_URL'] as $key => $env) {
+                if (! str_contains((string) $status[$key], $statusToken)) {
+                    $mismatched[] = $env;
+                }
+            }
+
+            if ($mismatched !== []) {
+                $this->error('   FAIL  MPESA_STATUS_TOKEN is set, but these do not carry it: ' . implode(', ', $mismatched));
+                $this->warn('   Safaricom would POST results to the old unguarded path and get a 404.');
+                $this->warn('   Point them at /payments/status/<token>/result and /timeout, then:');
+                $this->warn('   php artisan config:clear');
+
+                return self::FAILURE;
+            }
+
+            $this->line('   OK    Result/Timeout URLs carry the status token');
+        }
+
         $mpesa = app(MpesaService::class);
 
         // The same guard confirmManualPayment() consults. Failing it is not an

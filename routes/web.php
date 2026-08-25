@@ -24,6 +24,12 @@ Route::post('/mpesa/callback', [ApplicationController::class, 'mpesaCallback'])-
 Route::post('/mpesa/status/result', [ApplicationController::class, 'mpesaStatusCallback'])->name('mpesa.status.result');
 Route::post('/mpesa/status/timeout', [ApplicationController::class, 'mpesaStatusTimeout'])->name('mpesa.status.timeout');
 
+// Token-guarded Transaction Status callbacks. The unguarded pair above stays
+// routable until MPESA_STATUS_TOKEN is set, so code and .env can be deployed
+// in either order without dropping a verdict in flight.
+Route::post('/payments/status/{token}/result', [ApplicationController::class, 'mpesaStatusCallback'])->name('status.result');
+Route::post('/payments/status/{token}/timeout', [ApplicationController::class, 'mpesaStatusTimeout'])->name('status.timeout');
+
 // C2B. Deliberately NOT under /mpesa: Daraja rejects registered C2B URLs
 // containing "mpesa", "safaricom", "exe", "cmd", "sql" or "query". The {token}
 // segment is the shared secret from config('mpesa.c2b.token').

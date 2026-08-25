@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'mpesa/status/result',
             'mpesa/status/timeout',
             'payments/c2b/*',
+            'payments/status/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -42,7 +42,6 @@ class ApplicationController extends Controller
             return response()->json([
                 'message' => 'This application is already paid.',
                 'reference' => $application->reference,
-                'checkout_request_id' => $application->checkout_request_id,
                 'payment_status' => $application->payment_status,
             ]);
         }
@@ -138,10 +137,12 @@ class ApplicationController extends Controller
             }
         }
 
+        // The CheckoutRequestID is deliberately NOT returned: it is the only
+        // thing a forged callback needs, and nothing in the page uses it. The
+        // reference is what the browser polls with.
         return response()->json([
             'message' => 'Payment initiated. Please enter your M-Pesa PIN.',
             'reference' => $application->reference,
-            'checkout_request_id' => $checkoutRequestId,
         ]);
     }
 
@@ -487,7 +488,7 @@ class ApplicationController extends Controller
         ]);
     }
 
-    public function mpesaCallback(Request $request)
+    public function mpesaCallback(Request $request, MpesaService $mpesa)
     {
         Log::info('M-Pesa Callback Received', $request->all());
 
@@ -513,6 +514,37 @@ class ApplicationController extends Controller
         }
 
         if ($resultCode == 0) {
+            // This endpoint is unauthenticated -- Safaricom does not sign its
+            // callbacks -- and the CheckoutRequestID it is keyed on is handed
+            // to the browser when the prompt is sent. Anyone holding one could
+            // POST a ResultCode 0 here and walk away with a paid application.
+            // So the callback is treated as a HINT, and Safaricom is asked
+            // directly before any money is believed in.
+            $confirmed = $this->confirmedStkState($mpesa, $checkoutRequestId);
+
+            if ($confirmed === 'failed') {
+                Log::warning('Callback claimed success but Safaricom reports this prompt as failed. Ignoring.', [
+                    'reference' => $application->reference,
+                    'checkout_request_id' => $checkoutRequestId,
+                    'ip' => $request->ip(),
+                ]);
+
+                return response()->json(['message' => 'Success']);
+            }
+
+            if ($confirmed !== 'paid') {
+                // Could not confirm right now (Daraja unreachable, rate limited,
+                // still processing). Fail closed and leave the row pending: the
+                // scheduled sweep re-asks every minute and settles it then.
+                Log::info('Callback could not be confirmed with Safaricom yet; leaving it to the sweep.', [
+                    'reference' => $application->reference,
+                    'checkout_request_id' => $checkoutRequestId,
+                    'state' => $confirmed,
+                ]);
+
+                return response()->json(['message' => 'Success']);
+            }
+
             // Payment successful
             $receipt = null;
             if (isset($callback['CallbackMetadata']['Item'])) {
@@ -610,8 +642,49 @@ class ApplicationController extends Controller
      * Carries the real outcome of a confirmation code an applicant typed in
      * after paying by hand. Only this can move a claim to paid.
      */
-    public function mpesaStatusCallback(Request $request)
+    /**
+     * Refuse an unguarded Transaction Status callback once a token is set.
+     *
+     * Safaricom does not sign these, and the body alone decides whether an
+     * application is paid -- so while the conversation id is hard to guess, it
+     * is the only thing standing in the way. Once MPESA_STATUS_TOKEN is set,
+     * the secret in the path is what authenticates the caller, and the legacy
+     * unguarded paths stop working.
+     *
+     * A hit on the old path while a token is configured means the ResultURL in
+     * .env was not updated alongside it. That is logged loudly rather than
+     * silently 404ing, because the cost is a lost payment verdict.
+     */
+    private function guardStatusCallback(Request $request, ?string $token): void
     {
+        $expected = (string) config('mpesa.status.token');
+
+        if ($expected === '') {
+            return; // Not enabled yet; the legacy paths remain in use.
+        }
+
+        if ($token === null) {
+            Log::warning('Transaction Status callback arrived on the unguarded path while a token is configured. Update MPESA_STATUS_RESULT_URL and MPESA_STATUS_TIMEOUT_URL.', [
+                'path' => $request->path(),
+                'ip' => $request->ip(),
+            ]);
+
+            abort(404);
+        }
+
+        if (! hash_equals($expected, $token)) {
+            Log::warning('Transaction Status callback presented a bad token.', [
+                'ip' => $request->ip(),
+            ]);
+
+            abort(404);
+        }
+    }
+
+    public function mpesaStatusCallback(Request $request, ?string $token = null)
+    {
+        $this->guardStatusCallback($request, $token);
+
         Log::info('M-Pesa Transaction Status Result Received', $request->all());
 
         $result = $request->input('Result', []);
@@ -730,8 +803,10 @@ class ApplicationController extends Controller
     /**
      * Safaricom's Transaction Status QueueTimeOutURL callback.
      */
-    public function mpesaStatusTimeout(Request $request)
+    public function mpesaStatusTimeout(Request $request, ?string $token = null)
     {
+        $this->guardStatusCallback($request, $token);
+
         Log::warning('M-Pesa Transaction Status timed out', $request->all());
 
         $application = $this->applicationForStatusResult($request->input('Result', []));
@@ -867,6 +942,40 @@ class ApplicationController extends Controller
         }
 
         return $flattened;
+    }
+
+    /**
+     * What Safaricom says about one STK prompt, cached briefly.
+     *
+     * The cache is what stops a flood of forged callbacks turning into a flood
+     * of outbound queries against a rate-limited endpoint. Only definitive
+     * answers are cached: an unknown or still-processing state must be
+     * re-asked, or a transient outage would be remembered as a verdict.
+     */
+    private function confirmedStkState(MpesaService $mpesa, string $checkoutRequestId): string
+    {
+        $key = 'stk-confirm:' . $checkoutRequestId;
+        $cached = Cache::get($key);
+
+        if (is_string($cached) && $cached !== '') {
+            return $cached;
+        }
+
+        try {
+            $state = (string) $mpesa->stkQuery($checkoutRequestId)['state'];
+        } catch (\Throwable $e) {
+            Log::warning('Could not confirm an STK callback: ' . $e->getMessage(), [
+                'checkout_request_id' => $checkoutRequestId,
+            ]);
+
+            return 'unknown';
+        }
+
+        if (in_array($state, ['paid', 'failed'], true)) {
+            Cache::put($key, $state, now()->addMinutes(10));
+        }
+
+        return $state;
     }
 
     /**
