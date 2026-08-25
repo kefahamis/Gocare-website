@@ -6,7 +6,9 @@ use App\Mail\ApplicationReceived;
 use App\Models\Application;
 use App\Services\MpesaService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -225,9 +227,13 @@ class ApplicationController extends Controller
             ]);
         }
 
-        // Someone else's confirmed code cannot be borrowed.
+        // Someone else's code cannot be borrowed -- including one still being
+        // verified. Checking only `paid` left a window where two applications
+        // both sat in awaiting_verification on the same receipt and both
+        // passed if their results landed together. The unique index on
+        // mpesa_receipt is the backstop; this is the friendly refusal.
         $claimedElsewhere = Application::where('mpesa_receipt', $code)
-            ->where('payment_status', 'paid')
+            ->whereIn('payment_status', ['paid', 'awaiting_verification'])
             ->where('id', '!=', $application->id)
             ->exists();
 
@@ -259,11 +265,24 @@ class ApplicationController extends Controller
             ]);
         }
 
-        $application->update([
-            'payment_status' => 'awaiting_verification',
-            'mpesa_receipt' => $code,
-            'payment_note' => null,
-        ]);
+        try {
+            $application->update([
+                'payment_status' => 'awaiting_verification',
+                'mpesa_receipt' => $code,
+                'payment_note' => null,
+            ]);
+        } catch (QueryException $e) {
+            // The unique index caught a receipt the check above did not -- a
+            // code held by a failed or pending row, or a genuine race.
+            Log::warning('Manual M-Pesa code rejected by the unique index', [
+                'reference' => $application->reference,
+                'code' => $code,
+            ]);
+
+            return response()->json([
+                'error' => 'This confirmation code has already been used for another application. Please check the code on your M-Pesa message.',
+            ], 422);
+        }
 
         Log::info('Manual M-Pesa payment claimed', [
             'reference' => $application->reference,
@@ -439,15 +458,55 @@ class ApplicationController extends Controller
             // Safaricom retries a callback it thinks was not acknowledged, so
             // claim the transition atomically: whoever flips it away from paid
             // owns sending the email, and a repeat delivery is a no-op.
-            $claimed = Application::where('id', $application->id)
-                ->where('payment_status', '!=', 'paid')
-                ->update([
-                    'payment_status' => 'paid',
-                    'payment_note' => null,
-                    'mpesa_receipt' => $receipt,
+            try {
+                $claimed = Application::where('id', $application->id)
+                    ->where('payment_status', '!=', 'paid')
+                    ->update([
+                        'payment_status' => 'paid',
+                        'payment_note' => null,
+                        'mpesa_receipt' => $receipt,
+                    ]);
+            } catch (QueryException $e) {
+                // Never let a constraint turn into a 500: Safaricom would retry
+                // the callback and we would be no better off. Record it as paid
+                // without the contested receipt and leave a trail to reconcile.
+                Log::critical('M-Pesa receipt already belongs to another application. Reconcile by hand.', [
+                    'reference' => $application->reference,
+                    'receipt' => $receipt,
+                    'checkout_request_id' => $checkoutRequestId,
                 ]);
 
+                $claimed = Application::where('id', $application->id)
+                    ->where('payment_status', '!=', 'paid')
+                    ->update([
+                        'payment_status' => 'paid',
+                        'payment_note' => 'Paid. The M-Pesa receipt is already recorded on another application and needs checking.',
+                    ]);
+            }
+
             if ($claimed === 0) {
+                // Already paid -- but the STK query fallback can mark a payment
+                // paid without a receipt, because that response carries none.
+                // This is the only chance to record it, so backfill rather than
+                // discarding the one message that has the number.
+                if (blank($application->mpesa_receipt) && filled($receipt)) {
+                    try {
+                        $application->update(['mpesa_receipt' => $receipt]);
+                    } catch (QueryException $e) {
+                        Log::critical('Could not backfill an M-Pesa receipt: it is already on another application.', [
+                            'reference' => $application->reference,
+                            'receipt' => $receipt,
+                        ]);
+
+                        return response()->json(['message' => 'Success']);
+                    }
+
+                    Log::info('Backfilled M-Pesa receipt from a late callback', [
+                        'reference' => $application->reference,
+                        'receipt' => $receipt,
+                    ]);
+                }
+
                 Log::info('Duplicate M-Pesa callback ignored', [
                     'reference' => $application->reference,
                     'checkout_request_id' => $checkoutRequestId,
@@ -457,7 +516,7 @@ class ApplicationController extends Controller
             }
 
             // Send email only when paid
-            Mail::to(config('gocare.notification_email'))->send(new ApplicationReceived($application->refresh()));
+            Mail::to(config('gocare.notification_email'))->queue(new ApplicationReceived($application->refresh()));
 
         } elseif (in_array($application->payment_status, ['paid', 'awaiting_verification'], true)) {
             // A late failure callback for an abandoned STK attempt must not
@@ -571,6 +630,9 @@ class ApplicationController extends Controller
 
         // Claim the transition atomically, as in mpesaCallback: a retried result
         // or a racing STK callback must not send the email a second time.
+        // The receipt was already claimed on this row, so the index has nothing
+        // new to refuse here; the try is for the pathological case where two
+        // results race onto the same receipt.
         $claimed = Application::where('id', $application->id)
             ->where('payment_status', '!=', 'paid')
             ->update([
@@ -591,7 +653,7 @@ class ApplicationController extends Controller
         }
 
         // Matches the STK path: the notification email goes out once paid.
-        Mail::to(config('gocare.notification_email'))->send(new ApplicationReceived($application->refresh()));
+        Mail::to(config('gocare.notification_email'))->queue(new ApplicationReceived($application->refresh()));
 
         return response()->json(['ResultCode' => 0, 'ResultDesc' => 'Accepted']);
     }
@@ -650,7 +712,13 @@ class ApplicationController extends Controller
             return 'We could not find this confirmation code on M-Pesa. Please check the code on your message.';
         }
 
-        if ($transactionStatus !== '' && ! in_array(strtolower($transactionStatus), ['completed', 'success'], true)) {
+        // Fails closed, like the payee and amount checks below: an absent
+        // TransactionStatus is not evidence the transaction completed.
+        if ($transactionStatus === '') {
+            return 'We could not confirm the state of this transaction. Your payment is recorded and our team will confirm it shortly.';
+        }
+
+        if (! in_array(strtolower($transactionStatus), ['completed', 'success'], true)) {
             return 'M-Pesa reports this transaction as "' . $transactionStatus . '", so it cannot be accepted yet.';
         }
 
@@ -730,6 +798,102 @@ class ApplicationController extends Controller
         }
 
         return $flattened;
+    }
+
+    /**
+     * Fallback for an STK callback that never arrived.
+     *
+     * The page calls this once the poll has waited longer than a callback
+     * normally takes. Safaricom knows the outcome even when the webhook was
+     * lost, so asking is the difference between a completed application and an
+     * applicant who paid and was told "no confirmation yet".
+     *
+     * Deliberately NOT wired into status(): that is polled every few seconds,
+     * and this endpoint is rate limited at Safaricom. A short cache lock keeps
+     * a retried tap or a second tab from turning one query into ten.
+     */
+    public function queryStkPush(Request $request, MpesaService $mpesa): JsonResponse
+    {
+        $application = $this->currentApplication($request);
+
+        if (! $application) {
+            return response()->json(['error' => 'No application in this session.'], 404);
+        }
+
+        // Nothing to ask about, or nothing left to learn.
+        if ($application->payment_status === 'paid' || blank($application->checkout_request_id)) {
+            return response()->json([
+                'payment_status' => $application->payment_status,
+                'reference' => $application->reference,
+                'checked' => false,
+            ]);
+        }
+
+        $lock = 'stk-query:' . $application->id;
+
+        if (Cache::get($lock)) {
+            return response()->json([
+                'payment_status' => $application->payment_status,
+                'reference' => $application->reference,
+                'checked' => false,
+            ]);
+        }
+
+        Cache::put($lock, true, now()->addSeconds(20));
+
+        try {
+            $outcome = $mpesa->stkQuery((string) $application->checkout_request_id);
+        } catch (\Throwable $e) {
+            // The callback may still arrive; never turn a query outage into a
+            // failed payment.
+            Log::warning('STK query failed: ' . $e->getMessage(), [
+                'reference' => $application->reference,
+                'checkout_request_id' => $application->checkout_request_id,
+            ]);
+
+            return response()->json([
+                'payment_status' => $application->payment_status,
+                'reference' => $application->reference,
+                'checked' => false,
+            ]);
+        }
+
+        Log::info('STK query fallback', [
+            'reference' => $application->reference,
+            'checkout_request_id' => $application->checkout_request_id,
+            'state' => $outcome['state'],
+            'result_code' => $outcome['result_code'],
+            'description' => $outcome['description'],
+        ]);
+
+        if ($outcome['state'] === 'paid') {
+            // Same atomic claim as the callback: whoever flips it away from
+            // paid owns the email, so a callback landing at the same moment
+            // cannot send a second one.
+            $claimed = Application::where('id', $application->id)
+                ->where('payment_status', '!=', 'paid')
+                ->update(['payment_status' => 'paid', 'payment_note' => null]);
+
+            if ($claimed > 0) {
+                // The query response carries no MpesaReceiptNumber, so the
+                // receipt stays empty until the callback arrives to fill it.
+                Mail::to(config('gocare.notification_email'))->queue(new ApplicationReceived($application->refresh()));
+            }
+        } elseif ($outcome['state'] === 'failed' && $application->payment_status === 'pending') {
+            // Only a still-pending row may be failed: a code typed by hand in
+            // the meantime outranks an abandoned prompt.
+            $application->update([
+                'payment_status' => 'failed',
+                'payment_note' => $outcome['description'] ?: 'The payment prompt was cancelled or timed out.',
+            ]);
+        }
+
+        return response()->json([
+            'payment_status' => $application->refresh()->payment_status,
+            'reference' => $application->reference,
+            'checked' => true,
+            'state' => $outcome['state'],
+        ]);
     }
 
     public function status(string $reference): JsonResponse

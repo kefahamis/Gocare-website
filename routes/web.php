@@ -17,6 +17,7 @@ Route::post('/applications', [ApplicationController::class, 'store'])->name('app
 Route::post('/applications/submit', [ApplicationController::class, 'submitDetails'])->name('applications.submit');
 Route::post('/applications/manual', [ApplicationController::class, 'manualPayment'])->name('applications.manual');
 Route::post('/applications/paid', [ApplicationController::class, 'confirmManualPayment'])->name('applications.paid');
+Route::post('/applications/stk-query', [ApplicationController::class, 'queryStkPush'])->name('applications.stk-query');
 Route::get('/applications/status/{reference}', [ApplicationController::class, 'status'])->name('applications.status');
 Route::post('/mpesa/callback', [ApplicationController::class, 'mpesaCallback'])->name('mpesa.callback');
 Route::post('/mpesa/status/result', [ApplicationController::class, 'mpesaStatusCallback'])->name('mpesa.status.result');

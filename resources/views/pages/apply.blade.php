@@ -1928,6 +1928,28 @@
       }, 4000);
     }
 
+    /* Ask Safaricom directly what became of the prompt. Used only when the
+       callback is overdue -- the endpoint is rate limited, so this must never
+       run on every poll tick. */
+    async function stkQueryFallback() {
+      try {
+        const res = await fetch('/applications/stk-query', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+          }
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.payment_status || null;
+      } catch (err) {
+        console.error('[mpesa] stk-query', err);
+        return null;
+      }
+    }
+
     function pollMpesaStatus(reference) {
       // Daraja usually calls back within 30s; give the user up to 2 minutes.
       var elapsed = 0;
@@ -1966,6 +1988,31 @@
           }
         } catch (err) {
           console.error('[mpesa] poll', err);
+        }
+
+        // A callback normally lands within 30s. Past that, ask Safaricom
+        // rather than waiting out the clock on a webhook that may be lost.
+        // Twice only: at 40s, and once more before giving up.
+        if (elapsed === 40 || elapsed === 112) {
+          var queried = await stkQueryFallback();
+
+          if (queried === 'paid') {
+            clearInterval(mpesaPollTimer);
+            mpesaPollTimer = null;
+            markPaid(reference);
+            setMpesaStatus('#2e7d32', '&#10003; Payment received. Reference ' + reference + '.');
+            document.getElementById('mpesaPromptBtn').innerHTML = '<i data-lucide="check"></i> Paid';
+            if (window.lucide) lucide.createIcons();
+            return;
+          }
+
+          if (queried === 'failed') {
+            clearInterval(mpesaPollTimer);
+            mpesaPollTimer = null;
+            setMpesaStatus('#c0392b', '&#x26A0; Payment failed or was cancelled. Tap the button to try again, or pay manually below.');
+            resetMpesaButton();
+            return;
+          }
         }
 
         if (elapsed >= 120) {

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
@@ -40,10 +41,24 @@ class MpesaService
     /**
      * Get M-Pesa Access Token
      */
+    /**
+     * Daraja tokens last about an hour, so this caches for 55 minutes rather
+     * than fetching one per call. Keyed on the credentials so a key rotation
+     * or an env switch cannot serve a token minted for the other environment.
+     */
     public function getAccessToken(): string
     {
         $credentials = base64_encode($this->consumerKey . ':' . $this->consumerSecret);
-        
+
+        return Cache::remember(
+            'mpesa:token:' . md5($this->baseUrl . '|' . $credentials),
+            now()->addMinutes(55),
+            fn () => $this->fetchAccessToken($credentials)
+        );
+    }
+
+    private function fetchAccessToken(string $credentials): string
+    {
         $response = Http::withHeaders([
             'Authorization' => 'Basic ' . $credentials,
         ])->get($this->baseUrl . '/oauth/v1/generate?grant_type=client_credentials');
@@ -124,6 +139,90 @@ class MpesaService
     }
     
     /**
+     * Ask Safaricom what became of one STK prompt.
+     *
+     * The fallback for a callback that never arrives -- a dropped webhook, a
+     * network blip at Safaricom's end -- where the customer paid but the site
+     * never heard. Unlike Transaction Status this is synchronous, needs no
+     * initiator or security credential, and answers about the prompt rather
+     * than about a receipt.
+     *
+     * Two things make the raw response awkward, and both are normalised here:
+     * Daraja answers HTTP 500 with errorCode 500.001.1001 while the customer
+     * still has the prompt open, which is "keep waiting", not a failure; and
+     * it is rate limited, so callers must not poll it.
+     *
+     * @return array{state:string,result_code:string,description:string}
+     *         state is paid|failed|pending|unknown
+     */
+    public function stkQuery(string $checkoutRequestId): array
+    {
+        $timestamp = date('YmdHis');
+        $password = base64_encode($this->shortcode . $this->passkey . $timestamp);
+
+        $response = Http::withToken($this->getAccessToken())
+            ->post($this->baseUrl . '/mpesa/stkpushquery/v1/query', [
+                'BusinessShortCode' => $this->shortcode,
+                'Password' => $password,
+                'Timestamp' => $timestamp,
+                'CheckoutRequestID' => $checkoutRequestId,
+            ]);
+
+        $json = $response->json();
+
+        if (! is_array($json)) {
+            Log::warning('M-Pesa STK query returned no JSON', [
+                'checkout_request_id' => $checkoutRequestId,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return ['state' => 'unknown', 'result_code' => '', 'description' => ''];
+        }
+
+        // "The transaction is being processed" -- the prompt is still open on
+        // the phone. Daraja sends this as an error, but it is the one answer
+        // that means nothing has gone wrong.
+        $errorCode = (string) ($json['errorCode'] ?? '');
+
+        if ($errorCode === '500.001.1001') {
+            return [
+                'state' => 'pending',
+                'result_code' => $errorCode,
+                'description' => (string) ($json['errorMessage'] ?? 'Transaction is being processed'),
+            ];
+        }
+
+        if ($errorCode !== '') {
+            Log::warning('M-Pesa STK query rejected', [
+                'checkout_request_id' => $checkoutRequestId,
+                'response' => $json,
+            ]);
+
+            return [
+                'state' => 'unknown',
+                'result_code' => $errorCode,
+                'description' => (string) ($json['errorMessage'] ?? ''),
+            ];
+        }
+
+        $resultCode = (string) ($json['ResultCode'] ?? '');
+        $description = (string) ($json['ResultDesc'] ?? '');
+
+        if ($resultCode === '0') {
+            $state = 'paid';
+        } elseif ($resultCode === '') {
+            $state = 'unknown';
+        } else {
+            // 1032 cancelled, 1037 timed out, 1 insufficient balance, and the
+            // rest -- all of them mean this prompt will never be paid.
+            $state = 'failed';
+        }
+
+        return ['state' => $state, 'result_code' => $resultCode, 'description' => $description];
+    }
+
+    /**
      * Is the Transaction Status query configured?
      *
      * When it is not, the manual payment flow falls back to simply recording
@@ -184,7 +283,10 @@ class MpesaService
             'ResultURL' => $resultUrl,
             'QueueTimeOutURL' => $timeoutUrl,
             'Remarks' => 'Application fee verification',
-            'Occasion' => substr($reference, 0, 12),
+            // The whole reference: Daraja echoes this back in
+            // Result.ReferenceData, and the 12-char cut used to drop the
+            // unique tail, leaving every attempt on a given day identical.
+            'Occasion' => substr($reference, 0, 100),
         ];
 
         $response = Http::withToken($token)
