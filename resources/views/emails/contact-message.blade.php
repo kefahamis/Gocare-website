@@ -1,12 +1,12 @@
-﻿<h2>New contact message</h2>
-<p><strong>Name:</strong> {{ $message->name }}</p>
-<p><strong>Email:</strong> {{ $message->email }}</p>
-@if ($message->phone)
-    <p><strong>Phone:</strong> {{ $message->phone }}</p>
+<h2>New contact message</h2>
+<p><strong>Name:</strong> {{ $contact->name }}</p>
+<p><strong>Email:</strong> {{ $contact->email }}</p>
+@if ($contact->phone)
+    <p><strong>Phone:</strong> {{ $contact->phone }}</p>
 @endif
-@if ($message->subject)
-    <p><strong>Subject:</strong> {{ $message->subject }}</p>
+@if ($contact->subject)
+    <p><strong>Subject:</strong> {{ $contact->subject }}</p>
 @endif
 <p><strong>Message:</strong></p>
-<p>{!! nl2br(e($message->message)) !!}</p>
+<p>{!! nl2br(e($contact->message)) !!}</p>
 

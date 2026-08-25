@@ -13,7 +13,13 @@ class ContactMessageReceived extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public ContactMessage $message) {}
+    /**
+     * Deliberately NOT named $message: Laravel injects the
+     * Illuminate\Mail\Message instance into every mail view under that name,
+     * which silently shadows a Mailable property called the same thing. The
+     * view then reads properties off the transport object instead of the model.
+     */
+    public function __construct(public ContactMessage $contact) {}
 
     public function envelope(): Envelope
     {
