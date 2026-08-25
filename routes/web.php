@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApplicationController;
+use App\Http\Controllers\Mpesa\C2bController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\MediaPickerController;
 use App\Http\Controllers\NewsletterController;
@@ -22,6 +23,12 @@ Route::get('/applications/status/{reference}', [ApplicationController::class, 's
 Route::post('/mpesa/callback', [ApplicationController::class, 'mpesaCallback'])->name('mpesa.callback');
 Route::post('/mpesa/status/result', [ApplicationController::class, 'mpesaStatusCallback'])->name('mpesa.status.result');
 Route::post('/mpesa/status/timeout', [ApplicationController::class, 'mpesaStatusTimeout'])->name('mpesa.status.timeout');
+
+// C2B. Deliberately NOT under /mpesa: Daraja rejects registered C2B URLs
+// containing "mpesa", "safaricom", "exe", "cmd", "sql" or "query". The {token}
+// segment is the shared secret from config('mpesa.c2b.token').
+Route::post('/payments/c2b/{token}/confirm', [C2bController::class, 'confirm'])->name('c2b.confirm');
+Route::post('/payments/c2b/{token}/validate', [C2bController::class, 'validatePayment'])->name('c2b.validate');
 
 Route::get('/courses', [PageController::class, 'courses'])->name('courses');
 Route::get('/blog', [PageController::class, 'blog'])->name('blog');

@@ -1856,6 +1856,16 @@
           return;
         }
 
+        // A C2B match settles the fee on the spot, so unlock the rest of the
+        // form immediately rather than leaving it to the slow gate watch.
+        if (data.payment_status === 'paid') {
+          markPaid(data.reference);
+          setManualStatus('#2e7d32', '&#10003; ' + data.message + ' Reference ' + data.reference + '.');
+          btn.innerHTML = '<i data-lucide="check"></i> Verified';
+          if (window.lucide) lucide.createIcons();
+          return;
+        }
+
         setManualStatus('#2e7d32', '&#10003; ' + data.message + ' Reference ' + data.reference + '.');
         btn.innerHTML = '<i data-lucide="check"></i> Recorded';
         if (window.lucide) lucide.createIcons();

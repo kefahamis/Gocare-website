@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'mpesa/callback',
             'mpesa/status/result',
             'mpesa/status/timeout',
+            'payments/c2b/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

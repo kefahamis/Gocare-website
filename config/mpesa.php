@@ -32,6 +32,19 @@ return [
     | The initiator is an API operator created in the M-Pesa org portal with the
     | "Transaction Status Query" role. It is not the STK passkey above.
     */
+    // C2B: Safaricom pushes every payment made to the till here, so a typed
+    // code becomes a local lookup instead of an initiator-driven query.
+    'c2b' => [
+        // Buy Goods registers against the store / head office number, the same
+        // one the STK password is built from.
+        'shortcode' => env('MPESA_C2B_SHORTCODE') ?: env('MPESA_SHORTCODE'),
+
+        // Safaricom does not sign C2B callbacks, so this secret forms part of
+        // the callback path: an unguessable URL is what stops a stranger
+        // inserting a fake payment and then claiming it.
+        'token' => env('MPESA_C2B_TOKEN'),
+    ],
+
     'status' => [
         'initiator' => env('MPESA_STATUS_INITIATOR'),
         'initiator_password' => env('MPESA_STATUS_INITIATOR_PASSWORD'),

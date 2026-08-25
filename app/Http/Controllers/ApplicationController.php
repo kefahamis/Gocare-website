@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\ApplicationReceived;
 use App\Models\Application;
+use App\Services\Mpesa\ClaimC2bPayment;
 use App\Services\MpesaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Database\QueryException;
@@ -201,7 +202,7 @@ class ApplicationController extends Controller
      * not configured the claim is simply parked for an admin to reconcile
      * against the M-Pesa statement, as it was before verification existed.
      */
-    public function confirmManualPayment(Request $request, MpesaService $mpesa): JsonResponse
+    public function confirmManualPayment(Request $request, MpesaService $mpesa, ClaimC2bPayment $claimer): JsonResponse
     {
         $validated = $request->validate([
             'transaction_code' => 'required|string|regex:/^[A-Za-z0-9]{6,15}$/',
@@ -223,6 +224,73 @@ class ApplicationController extends Controller
                 'message' => 'This application is already paid.',
                 'reference' => $application->reference,
                 'payment_status' => $application->payment_status,
+                'verifying' => false,
+            ]);
+        }
+
+        // C2B first: if Safaricom already pushed this payment to us, the answer
+        // is in our own table and needs no query, no initiator and no waiting.
+        // Only a code we never received falls through to Transaction Status.
+        $c2b = $claimer->claim($code, (float) $application->amount, (int) $application->id);
+
+        if ($c2b['status'] === ClaimC2bPayment::ALREADY_USED) {
+            Log::warning('C2B code already claimed by another application', [
+                'reference' => $application->reference,
+                'code' => $code,
+            ]);
+
+            return response()->json([
+                'error' => 'This confirmation code has already been used for another application. Please check the code on your M-Pesa message.',
+            ], 422);
+        }
+
+        if ($c2b['status'] === ClaimC2bPayment::AMOUNT_SHORT) {
+            $paid = (float) ($c2b['payment']->amount ?? 0);
+
+            return response()->json([
+                'error' => 'The amount paid (KES ' . number_format($paid) . ') is less than the application fee of KES ' . number_format((float) $application->amount) . '.',
+            ], 422);
+        }
+
+        if ($c2b['status'] === ClaimC2bPayment::CLAIMED) {
+            try {
+                $settled = Application::where('id', $application->id)
+                    ->where('payment_status', '!=', 'paid')
+                    ->update([
+                        'payment_status' => 'paid',
+                        'payment_note' => null,
+                        'mpesa_receipt' => $code,
+                    ]);
+            } catch (QueryException $e) {
+                // The receipt is on another application row. The C2B claim above
+                // already ruled out another application owning the payment, so
+                // this is stale data rather than a double spend.
+                Log::critical('C2B payment claimed but the receipt is already on another application. Reconcile by hand.', [
+                    'reference' => $application->reference,
+                    'code' => $code,
+                ]);
+
+                $settled = Application::where('id', $application->id)
+                    ->where('payment_status', '!=', 'paid')
+                    ->update([
+                        'payment_status' => 'paid',
+                        'payment_note' => 'Paid. The M-Pesa receipt is already recorded on another application and needs checking.',
+                    ]);
+            }
+
+            if ($settled > 0) {
+                Mail::to(config('gocare.notification_email'))->queue(new ApplicationReceived($application->refresh()));
+            }
+
+            Log::info('Manual M-Pesa code matched a C2B confirmation', [
+                'reference' => $application->reference,
+                'code' => $code,
+            ]);
+
+            return response()->json([
+                'message' => 'Payment confirmed.',
+                'reference' => $application->reference,
+                'payment_status' => 'paid',
                 'verifying' => false,
             ]);
         }
