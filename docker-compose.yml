@@ -51,6 +51,22 @@ services:
     networks:
       - laravel-network
 
+  # Runs Laravel's scheduler in-process: no host crontab needed, and it dies
+  # with the stack rather than firing against a container that is not up.
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel_scheduler
+    restart: unless-stopped
+    command: php artisan schedule:work
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - laravel-network
+
   queue-worker:
     build:
       context: .

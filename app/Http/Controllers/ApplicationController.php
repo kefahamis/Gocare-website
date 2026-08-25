@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\ApplicationReceived;
 use App\Models\Application;
 use App\Services\Mpesa\ClaimC2bPayment;
+use App\Services\Mpesa\SettleStkPush;
 use App\Services\MpesaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Database\QueryException;
@@ -880,7 +881,7 @@ class ApplicationController extends Controller
      * and this endpoint is rate limited at Safaricom. A short cache lock keeps
      * a retried tap or a second tab from turning one query into ten.
      */
-    public function queryStkPush(Request $request, MpesaService $mpesa): JsonResponse
+    public function queryStkPush(Request $request, MpesaService $mpesa, SettleStkPush $settler): JsonResponse
     {
         $application = $this->currentApplication($request);
 
@@ -934,27 +935,9 @@ class ApplicationController extends Controller
             'description' => $outcome['description'],
         ]);
 
-        if ($outcome['state'] === 'paid') {
-            // Same atomic claim as the callback: whoever flips it away from
-            // paid owns the email, so a callback landing at the same moment
-            // cannot send a second one.
-            $claimed = Application::where('id', $application->id)
-                ->where('payment_status', '!=', 'paid')
-                ->update(['payment_status' => 'paid', 'payment_note' => null]);
-
-            if ($claimed > 0) {
-                // The query response carries no MpesaReceiptNumber, so the
-                // receipt stays empty until the callback arrives to fill it.
-                Mail::to(config('gocare.notification_email'))->queue(new ApplicationReceived($application->refresh()));
-            }
-        } elseif ($outcome['state'] === 'failed' && $application->payment_status === 'pending') {
-            // Only a still-pending row may be failed: a code typed by hand in
-            // the meantime outranks an abandoned prompt.
-            $application->update([
-                'payment_status' => 'failed',
-                'payment_note' => $outcome['description'] ?: 'The payment prompt was cancelled or timed out.',
-            ]);
-        }
+        // Shared with the scheduled sweep so the two cannot disagree about what
+        // a verdict means.
+        $settler->apply($application, $outcome);
 
         return response()->json([
             'payment_status' => $application->refresh()->payment_status,
