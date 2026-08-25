@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Application extends Model
 {
+    public function documents()
+    {
+        return $this->hasMany(ApplicationDocument::class);
+    }
+
     protected $fillable = [
         'reference',
         'status',

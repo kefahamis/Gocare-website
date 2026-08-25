@@ -17,6 +17,14 @@ Route::post('/newsletter/subscribe', [NewsletterController::class, 'store'])->na
 Route::post('/applications', [ApplicationController::class, 'store'])->name('applications.store');
 Route::post('/applications/submit', [ApplicationController::class, 'submitDetails'])->name('applications.submit');
 Route::post('/applications/manual', [ApplicationController::class, 'manualPayment'])->name('applications.manual');
+Route::post('/applications/documents', [ApplicationController::class, 'uploadDocument'])->name('applications.documents.store');
+
+// Admin download. The files are on a private disk, so this is the only way to
+// reach one -- and it requires an authenticated panel user, not just the URL.
+Route::get('/admin/application-documents/{document}', [ApplicationController::class, 'downloadDocument'])
+    ->middleware(['auth'])
+    ->name('admin.application-documents.show');
+Route::delete('/applications/documents/{document}', [ApplicationController::class, 'deleteDocument'])->name('applications.documents.destroy');
 Route::post('/applications/paid', [ApplicationController::class, 'confirmManualPayment'])->name('applications.paid');
 Route::post('/applications/stk-query', [ApplicationController::class, 'queryStkPush'])->name('applications.stk-query');
 Route::get('/applications/status/{reference}', [ApplicationController::class, 'status'])->name('applications.status');

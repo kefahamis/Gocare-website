@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\ApplicationReceived;
 use App\Models\Application;
+use App\Models\ApplicationDocument;
 use App\Services\Mpesa\ClaimC2bPayment;
 use App\Services\Mpesa\SettleStkPush;
 use App\Services\MpesaService;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Cache;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ApplicationController extends Controller
@@ -524,6 +526,126 @@ class ApplicationController extends Controller
      * this refuses the submission for the same reason, so a hand-crafted POST
      * cannot get past it either.
      */
+    /**
+     * Store one uploaded document against this browser's application.
+     *
+     * Documents are chosen at step 4, before the payment step has created a
+     * row, so this opens one the same way manualPayment() does. Uploading as
+     * each file is picked -- rather than bundling them into the final submit --
+     * keeps every request under the per-file limit, gives the applicant an
+     * error on the file that is actually wrong, and means an abandoned
+     * application still has its documents when they come back.
+     */
+    public function uploadDocument(Request $request): JsonResponse
+    {
+        $kind = (string) $request->input('kind');
+        $rules = ApplicationDocument::KINDS[$kind] ?? null;
+
+        if (! $rules) {
+            return response()->json(['error' => 'Unknown document type.'], 422);
+        }
+
+        $request->validate([
+            'file' => 'required|file|mimes:' . implode(',', $rules['mimes']) . '|max:' . $rules['max'],
+        ], [
+            'file.mimes' => 'That file type is not accepted here. Allowed: ' . strtoupper(implode(', ', $rules['mimes'])) . '.',
+            'file.max' => 'That file is too large. The limit is ' . round($rules['max'] / 1024) . 'MB.',
+        ]);
+
+        $application = $this->currentApplication($request);
+
+        if (! $application) {
+            $reference = $this->newReference();
+
+            $application = Application::create([
+                'reference' => $reference,
+                'status' => 'draft',
+                'amount' => (int) config('gocare.application_fee'),
+                'payment_status' => 'pending',
+                'data' => [],
+            ]);
+
+            $request->session()->put('application_reference', $reference);
+        }
+
+        $disk = config('gocare.documents_disk');
+        $file = $request->file('file');
+
+        // Store under the reference, with a generated name: the applicant's own
+        // filename is kept in the database for display but never used on disk,
+        // where it would be a path-traversal and collision risk.
+        $path = $file->store('application-documents/' . $application->reference, $disk);
+
+        // The three required kinds are single. Replacing rather than appending
+        // is what the form implies -- one ID copy, not a pile of attempts.
+        if ($rules['single']) {
+            ApplicationDocument::where('application_id', $application->id)
+                ->where('kind', $kind)
+                ->get()
+                ->each
+                ->delete();
+        }
+
+        $document = ApplicationDocument::create([
+            'application_id' => $application->id,
+            'kind' => $kind,
+            'original_name' => (string) $file->getClientOriginalName(),
+            'path' => $path,
+            'mime' => (string) $file->getClientMimeType(),
+            'size' => (int) $file->getSize(),
+        ]);
+
+        Log::info('Application document uploaded', [
+            'reference' => $application->reference,
+            'kind' => $kind,
+            'size' => $document->size,
+        ]);
+
+        return response()->json([
+            'id' => $document->id,
+            'kind' => $document->kind,
+            'name' => $document->original_name,
+            'size' => $document->readableSize(),
+            'reference' => $application->reference,
+        ]);
+    }
+
+    /**
+     * Stream a document to an authenticated admin.
+     *
+     * The disk is private, so there is no URL that reaches these files
+     * directly -- which is the point. National IDs must not be retrievable by
+     * anyone who happens to learn a path.
+     */
+    public function downloadDocument(ApplicationDocument $document)
+    {
+        $disk = Storage::disk(config('gocare.documents_disk'));
+
+        if (! $disk->exists($document->path)) {
+            abort(404);
+        }
+
+        return $disk->download($document->path, $document->original_name);
+    }
+
+    /**
+     * Remove a document the applicant replaced or picked by mistake. Scoped to
+     * the session's own application: an id alone must not reach someone
+     * else's national ID.
+     */
+    public function deleteDocument(Request $request, ApplicationDocument $document): JsonResponse
+    {
+        $application = $this->currentApplication($request);
+
+        if (! $application || $document->application_id !== $application->id) {
+            return response()->json(['error' => 'Not found.'], 404);
+        }
+
+        $document->delete();
+
+        return response()->json(['deleted' => true]);
+    }
+
     public function submitDetails(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -552,6 +674,27 @@ class ApplicationController extends Controller
                 'message' => 'Your application fee has not been confirmed yet. Complete the M-Pesa payment on the Payment step, then submit.',
                 'reference' => $application?->reference,
                 'payment_status' => $application?->payment_status ?? 'pending',
+            ], 422);
+        }
+
+        // The browser marks these zones required, but the browser is not a
+        // gate. Without this an application could be submitted with no ID copy
+        // at all, and nobody would notice until admissions opened it.
+        $required = array_keys(array_filter(
+            ApplicationDocument::KINDS,
+            fn (array $rules) => $rules['required']
+        ));
+
+        $uploaded = $application->documents()->pluck('kind')->all();
+        $missing = array_diff($required, $uploaded);
+
+        if ($missing !== []) {
+            $labels = array_map(fn (string $kind) => ApplicationDocument::KINDS[$kind]['label'], $missing);
+
+            return response()->json([
+                'message' => 'Please upload the required documents first: ' . implode(', ', $labels) . '.',
+                'reference' => $application->reference,
+                'missing_documents' => array_values($missing),
             ], 422);
         }
 

@@ -4,6 +4,11 @@ return [
     'notification_email' => env('GOCARE_NOTIFICATION_EMAIL', 'admissions@example.com'),
     'application_fee' => (int) env('GOCARE_APPLICATION_FEE', 1000),
 
+    // Applicant documents are national IDs and result slips. They live on a
+    // PRIVATE disk and are only ever served through an authenticated admin
+    // route -- never from public storage, where the URL alone would be enough.
+    'documents_disk' => env('GOCARE_DOCUMENTS_DISK', 'local'),
+
     // One paid application per phone number. Set false where a single phone
     // legitimately applies more than once -- a parent applying for two
     // children -- or while testing, where the tester's own number already has

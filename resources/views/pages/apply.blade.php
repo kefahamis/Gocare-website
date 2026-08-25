@@ -795,19 +795,19 @@
               <h2><i data-lucide="file-up" style="color:var(--o)"></i> Step 4: Upload Documents</h2>
               <div class="form-group">
                 <label>National ID / Passport Copy *</label>
-                <div class="upload-zone" data-required="1"><i data-lucide="upload-cloud"></i><p class="upload-label">Click to upload or drag and drop</p><p>PDF, JPG or PNG (Max 5MB)</p><input type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:none"></div>
+                <div data-kind="id_copy" class="upload-zone" data-required="1"><i data-lucide="upload-cloud"></i><p class="upload-label">Click to upload or drag and drop</p><p>PDF, JPG or PNG (Max 5MB)</p><input type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:none"></div>
               </div>
               <div class="form-group">
                 <label>KCSE Result Slip / Certificate *</label>
-                <div class="upload-zone" data-required="1"><i data-lucide="upload-cloud"></i><p class="upload-label">Click to upload or drag and drop</p><p>PDF, JPG or PNG (Max 5MB)</p><input type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:none"></div>
+                <div data-kind="result_slip" class="upload-zone" data-required="1"><i data-lucide="upload-cloud"></i><p class="upload-label">Click to upload or drag and drop</p><p>PDF, JPG or PNG (Max 5MB)</p><input type="file" accept=".pdf,.jpg,.jpeg,.png" style="display:none"></div>
               </div>
               <div class="form-group">
                 <label>Passport-Size Photo *</label>
-                <div class="upload-zone" data-required="1"><i data-lucide="upload-cloud"></i><p class="upload-label">Click to upload or drag and drop</p><p>JPG or PNG (Max 2MB)</p><input type="file" accept=".jpg,.jpeg,.png" style="display:none"></div>
+                <div data-kind="passport_photo" class="upload-zone" data-required="1"><i data-lucide="upload-cloud"></i><p class="upload-label">Click to upload or drag and drop</p><p>JPG or PNG (Max 2MB)</p><input type="file" accept=".jpg,.jpeg,.png" style="display:none"></div>
               </div>
               <div class="form-group">
                 <label>Additional Certificates (Optional)</label>
-                <div class="upload-zone"><i data-lucide="upload-cloud"></i><p class="upload-label">Click to upload or drag and drop</p><p>PDF, JPG or PNG (Max 5MB each)</p><input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none"></div>
+                <div data-kind="certificate" class="upload-zone"><i data-lucide="upload-cloud"></i><p class="upload-label">Click to upload or drag and drop</p><p>PDF, JPG or PNG (Max 5MB each)</p><input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none"></div>
               </div>
               <div class="form-group">
                 <p style="font-size:0.85rem;color:#64748b;"><i data-lucide="info" style="width:16px;height:16px;display:inline;vertical-align:middle;color:var(--o)"></i> Don&rsquo;t have documents yet? You can upload them later. Click &ldquo;Continue&rdquo; to proceed.</p>
@@ -1446,7 +1446,10 @@
       var ok = true;
       document.querySelectorAll('#step4 .upload-zone[data-required="1"]').forEach(function (zone) {
         var input = zone.querySelector('input[type="file"]');
-        var has = input && input.files && input.files.length > 0;
+        // What the SERVER has, not what the file picker holds: a file that
+        // failed to upload leaves the picker populated and the server empty.
+        var kind = zone.dataset.kind;
+        var has = !!(kind && uploadedDocs[kind] && uploadedDocs[kind].length);
         var err = zone.parentElement.querySelector('.field-error');
         if (!has) {
           zone.classList.add('blank-error');
@@ -1576,6 +1579,10 @@
     var mpesaPollTimer = null;
     var manualVerifyTimer = null;
     var mpesaReference = null;
+
+    /* Document ids the server has accepted, by kind. validateStep4 reads this
+       rather than the file inputs, so a failed upload cannot pass as done. */
+    var uploadedDocs = {};
 
     /* -- PAYMENT GATE ------------------------------------------------
        Steps 6 and 7 stay out of reach until the server reports this
@@ -2269,9 +2276,54 @@
           return true;
         }
 
-        input.addEventListener('change', () => {
+        /* Send the file straight away rather than bundling everything into
+           the final submit: each request stays under the per-file limit, the
+           error names the file that is actually wrong, and an applicant who
+           comes back tomorrow still has their documents. */
+        async function uploadFiles(files) {
+          const kind = zone.dataset.kind;
+          if (!kind) return true;
+
+          label.innerHTML = '<span class="upload-filename">Uploading&hellip;</span>';
+          hint.textContent = files.length > 1 ? files.length + ' files' : files[0].name;
+
+          for (const file of files) {
+            const body = new FormData();
+            body.append('kind', kind);
+            body.append('file', file);
+
+            try {
+              const res = await fetch('/applications/documents', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body: body
+              });
+              const data = await res.json();
+
+              if (!res.ok) {
+                showError((data.errors && data.errors.file && data.errors.file[0]) || data.error || 'Upload failed. Please try again.');
+                return false;
+              }
+
+              uploadedDocs[kind] = (uploadedDocs[kind] || []).concat([data.id]);
+            } catch (err) {
+              console.error('[upload]', err);
+              showError('Upload failed. Check your connection and try again.');
+              return false;
+            }
+          }
+
+          showFiles(files);
+          saveDraft();
+          return true;
+        }
+
+        input.addEventListener('change', async () => {
           if (input.files && input.files.length) {
-            if (!showFiles(input.files)) input.value = '';
+            if (!showFiles(input.files)) { input.value = ''; return; }
+            // A single-file zone replaces server-side, so forget the old id.
+            if (!input.multiple) uploadedDocs[zone.dataset.kind] = [];
+            if (!await uploadFiles(input.files)) input.value = '';
           } else {
             resetZone();
           }
