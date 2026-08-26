@@ -275,7 +275,13 @@
     .acc-opt svg { width: 20px; height: 20px; }
     .acc-opt:hover { border-color: rgba(236,116,36,0.5); }
     .acc-opt.selected { border-color: var(--o); background: rgba(236,116,36,0.08); color: var(--o); box-shadow: 0 4px 14px rgba(236,116,36,0.15); }
-    .acc-grid { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+    .acc-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; align-items: start; }
+    .acc-main { min-width: 0; }
+    /* The hostel panel shares its row with the Important Info rail, so the
+       column is narrow. Pair fields side by side only when they actually fit,
+       otherwise stack them full width so every control lines up. */
+    .acc-main .form-row { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); align-items: start; }
+    .acc-main .form-group { min-width: 0; }
     .acc-nobox { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; min-height: 180px; padding: 30px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 14px; }
     .acc-nobox svg { width: 40px; height: 40px; color: var(--o); }
     .acc-nobox p { font-size: 0.95rem; color: #475569; line-height: 1.6; max-width: 340px; }
@@ -854,14 +860,15 @@
               </div>
 
               <!-- Manual M-Pesa fallback, for when the STK prompt never arrives.
-                   The applicant pays from their own M-Pesa menu, then confirms. -->
-              <div style="margin-top:12px;">
+                   The applicant pays from their own M-Pesa menu, then confirms.
+                   Temporarily disabled: drop the display:none below to bring it back. -->
+              <div style="margin-top:12px;display:none;">
                 <button type="button" id="manualPayToggle" onclick="toggleManualPay()" style="background:none;border:none;padding:0;color:var(--o);font-weight:600;font-size:.9rem;cursor:pointer;text-decoration:underline;display:inline-flex;align-items:center;gap:6px;">
                   <i data-lucide="help-circle" style="width:16px;height:16px"></i> Prompt didn&rsquo;t arrive? Pay manually instead
                 </button>
               </div>
 
-              <div class="payment-info-box" id="manualPayBox" style="display:none;margin-top:14px;">
+              <div class="payment-info-box" id="manualPayBox" style="display:none;margin-top:14px;" hidden>
                 <h4><i data-lucide="smartphone"></i> Pay manually via M-Pesa</h4>
                 <ol style="margin:0 0 14px 18px;padding:0;font-size:.92rem;line-height:1.9;color:#334155;">
                   <li>Open <strong>M-Pesa</strong> on your phone</li>
@@ -934,7 +941,6 @@
                         <label>Preferred Campus</label>
                         <select id="f_acc_campus">
                           <option value="">Select campus</option>
-                          <option>Nairobi City Campus</option>
                           <option>Thika Road Campus &middot; Ruiru</option>
                         </select>
                       </div>
@@ -973,7 +979,7 @@
                   <h4><i data-lucide="info"></i> Important Info</h4>
                   <ul>
                     <li><i data-lucide="check-circle-2"></i> Hostel rooms are allocated on a first-come, first-served basis.</li>
-                    <li><i data-lucide="wifi"></i> All rooms include Wi-Fi &amp; study desks.</li>
+                    <li><i data-lucide="wifi"></i> All rooms include Wi-Fi &amp; Hot Shower.</li>
                     <li><i data-lucide="wallet"></i> Accommodation fees are payable after admission confirmation.</li>
                   </ul>
                   <a href="hostels-and-accommodation" class="acc-info-link">View hostel details <i data-lucide="arrow-right"></i></a>
@@ -1649,7 +1655,7 @@
       if (status === 'awaiting_verification') {
         setPayGate('waiting', PAY_GATE_WAITING);
       } else if (status === 'failed') {
-        setPayGate('locked', '&#x26A0; The last payment attempt failed or was cancelled. Send the request again above, or pay manually.');
+        setPayGate('locked', '&#x26A0; The last payment attempt failed or was cancelled. Send the request again above.');
       } else {
         setPayGate('locked', PAY_GATE_LOCKED);
       }
@@ -1673,11 +1679,11 @@
       } else if (status === 'awaiting_verification') {
         setMpesaStatus('#1565c0', '&#x23F3; Your payment is recorded and waiting for M-Pesa to confirm it. Reference ' + mpesaReference + '.');
       } else if (status === 'failed') {
-        setMpesaStatus('#c0392b', '&#x26A0; Payment failed or was cancelled. Tap the button to try again, or pay manually below.');
+        setMpesaStatus('#c0392b', '&#x26A0; Payment failed or was cancelled. Tap the button to try again.');
         btn.disabled = false;
         btn.innerHTML = '<i data-lucide="send"></i> Send Payment Request';
       } else {
-        setMpesaStatus('#b26a00', '&#x23F3; Still waiting for M-Pesa. This keeps checking on its own &mdash; leave the page open, or pay manually below.');
+        setMpesaStatus('#b26a00', '&#x23F3; Still waiting for M-Pesa. This keeps checking on its own &mdash; leave the page open.');
         btn.disabled = false;
         btn.innerHTML = '<i data-lucide="send"></i> Send Payment Request';
       }
@@ -2063,7 +2069,7 @@
           if (data.payment_status === 'failed') {
             clearInterval(mpesaPollTimer);
             mpesaPollTimer = null;
-            setMpesaStatus('#c0392b', '&#x26A0; Payment failed or was cancelled. Tap the button to try again, or pay manually below.');
+            setMpesaStatus('#c0392b', '&#x26A0; Payment failed or was cancelled. Tap the button to try again.');
             resetMpesaButton();
             return;
           }
@@ -2090,7 +2096,7 @@
           if (queried === 'failed') {
             clearInterval(mpesaPollTimer);
             mpesaPollTimer = null;
-            setMpesaStatus('#c0392b', '&#x26A0; Payment failed or was cancelled. Tap the button to try again, or pay manually below.');
+            setMpesaStatus('#c0392b', '&#x26A0; Payment failed or was cancelled. Tap the button to try again.');
             resetMpesaButton();
             return;
           }
